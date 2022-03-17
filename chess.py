@@ -9,19 +9,33 @@ piece_index1 = 1
 
 
 class ChessMap:
-    def __init__(self, pieces):
+    def __init__(self, pieces=None):
         self._chess_map = []
-        # self.name2piece = {}
+        self.J0 = None
+        self.j0 = None
         for i in range(0, 10):
             self._chess_map.append(list())
             for j in range(0, 9):
                 self._chess_map[i].append(None)
-        for piece in pieces:
-            self._chess_map[piece.y()][piece.x()] = piece
-        #     self.name2piece[piece.name()] = piece
+        if pieces is not None:
+            for piece in pieces:
+                piece = piece.copy()
+                self._chess_map[piece.y()][piece.x()] = piece
+                if piece.name() == J0.name():
+                    self.J0 = piece
+                elif piece.name() == j0.name():
+                    self.j0 = piece
 
     def get_piece(self, x, y):
         return self._chess_map[y][x]
+
+    def copy(self):
+        chess_map = ChessMap()
+        for i in range(0, 10):
+            for j in range(0, 9):
+                chess_map._chess_map[i][j] = self._chess_map[i][j].copy()
+        chess_map.J0 = self.J0.copy()
+        chess_map.j0 = self.j0.copy()
 
 
 class Position:
@@ -31,22 +45,32 @@ class Position:
 
 
 class BasePiece:
-    def __init__(self, camp, index_name, value_map, pos=None):
+    def __init__(self, camp=None, index_name=None, value_map=None, pos=None):
         self._camp = camp  # 阵营
         self._pos = pos  # 位置
-        self.index_name = index_name  # 编号
-        self.alive = True  # 是否存活
+        self._index_name = index_name  # 编号
+        self._alive = True  # 是否存活
         self._name = None
         self._camp_chess_name = None
-        value_map = copy.copy(value_map)
-        if self._camp == red_camp:
-            self.value_map = value_map
-        else:
-            value_map.reverse()
-            self.value_map = value_map
+        if value_map is not None:
+            value_map = copy.copy(value_map)
+            if self._camp == red_camp:
+                self._value_map = value_map
+            else:
+                value_map.reverse()
+                self._value_map = value_map
 
         if self._pos is None:
             self._pos = Position()
+
+    def base_copy(self, piece):
+        piece._camp = self._camp
+        piece._pos = self._pos
+        piece._index_name = self._index_name
+        piece._alive = self._alive
+        piece._name = self._name
+        piece._camp_chess_name = self._camp_chess_name
+        piece._value_map = self._value_map
 
     def pos(self):
         return self._pos
@@ -72,16 +96,21 @@ class BasePiece:
     def name(self):
         if self._name is not None:
             return self._name
-        self._name = "{}{}{}".format(self.__class__.__name__, self._camp, self.index_name)
+        self._name = "{}{}{}".format(self.__class__.__name__, self._camp, self._index_name)
         return self._name
 
     def value(self):
-        return self.value_map[self._pos.y][self._pos.x]
+        return self._value_map[self._pos.y][self._pos.x]
 
 
 class ChessC(BasePiece):
-    def __init__(self, camp, index_name, pos=None):
+    def __init__(self, camp=None, index_name=None, pos=None):
         super().__init__(camp, index_name, chess_value.chess_c_value, pos)
+
+    def copy(self):
+        res = ChessC()
+        self.base_copy(res)
+        return res
 
     def next_all_pos(self, chess_map):
         res = []
@@ -109,8 +138,13 @@ class ChessC(BasePiece):
 
 
 class ChessM(BasePiece):
-    def __init__(self, camp, index_name, pos=None):
+    def __init__(self, camp=None, index_name=None, pos=None):
         super().__init__(camp, index_name, chess_value.chess_m_value, pos)
+
+    def copy(self):
+        res = ChessM()
+        self.base_copy(res)
+        return res
 
     def next_all_pos(self, chess_map):
         res = []
@@ -153,8 +187,13 @@ def can_reach(self, chess_map, end_x, end_y, ban_x=None, ban_y=None, x_range=(0,
 
 
 class ChessX(BasePiece):
-    def __init__(self, camp, index_name, pos=None):
+    def __init__(self, camp=None, index_name=None, pos=None):
         super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+
+    def copy(self):
+        res = ChessX()
+        self.base_copy(res)
+        return res
 
     def next_all_pos(self, chess_map):
         res = []
@@ -172,8 +211,13 @@ class ChessX(BasePiece):
 
 
 class ChessS(BasePiece):
-    def __init__(self, camp, index_name, pos=None):
+    def __init__(self, camp=None, index_name=None, pos=None):
         super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+
+    def copy(self):
+        res = ChessS()
+        self.base_copy(res)
+        return res
 
     def next_all_pos(self, chess_map):
         res = []
@@ -193,13 +237,13 @@ class ChessS(BasePiece):
 
 
 class ChessJ(BasePiece):
-    def __init__(self, camp, index_name, pos=None):
+    def __init__(self, camp=None, index_name=None, pos=None):
         super().__init__(camp, index_name, chess_value.chess_x_value, pos)
 
-    def adversary(self):
-        old_str = red_camp if self.camp() == red_camp else black_camp
-        new_str = black_camp if self.camp() == red_camp else red_camp
-        return self.name().replace(old_str, new_str)
+    def copy(self):
+        res = ChessJ()
+        self.base_copy(res)
+        return res
 
     def next_all_pos(self, chess_map):
         res = []
@@ -215,14 +259,14 @@ class ChessJ(BasePiece):
             res.append(Position(x, y - 1))
         if can_reach(self, chess_map, x + 1, y, ban_x=None, ban_y=None, x_range=x_range, y_range=y_range):
             res.append(Position(x + 1, y))
-        adversary = J0 if self.camp() == red_camp else j0
-        flag = False
-        for i in range(J0.y() + 1, j0.y()):
+        adversary = chess_map.J0 if self.camp() == red_camp else chess_map.j0
+        flag = True
+        for i in range(chess_map.J0.y() + 1, chess_map.j0.y()):
             piece = chess_map.get_piece(self.x(), i)
             if piece is not None:
-                flag = True
+                flag = False
         if flag:
-            res.append(Position(adversary.pos().x, adversary.pos().y))
+            res.append(Position(adversary.x(), adversary.y()))
 
 
 """

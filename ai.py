@@ -35,22 +35,18 @@ class BaseNode:
         if self.paces is not None and len(self.paces) > 0:
             self._last_pace = paces[-1]
 
-    def set_last_pace(self, pace):
-        self._last_pace = pace
-
     def last_pace(self):
         return self._last_pace
-
-    # play的pace有可能是空的，因为已经没有最好的策略了
-    def random_pace(self):
-        if self.paces is None or len(self.paces) <= 0:
-            return
-        i = random.randint(0, len(self.paces) - 1)
-        return self.paces[i]
 
     def play(self, pace):
         self._last_pace = pace
         self.paces.append(pace)
+
+    def rollback(self):
+        self.paces.pop()
+        self._last_pace = None
+        if len(self.paces) > 0:
+            self._last_pace = self.paces[-1]
 
     def key(self):
         return "|".join([str(p) for p in self.paces])
