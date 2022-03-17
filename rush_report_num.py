@@ -93,7 +93,7 @@ class SolveRushReportNum:
         self.steps = steps
         self.total = total
 
-    # output:
+    # 记录1-n的所有状态
     def solve(self):
         max_step = max(*self.steps)
 
