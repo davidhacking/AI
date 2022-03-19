@@ -7,7 +7,7 @@ class AlphaBetaAI:
     def __init__(self):
         self.value_cache = {}
 
-    def next_pace(self, node, depth=4, maximizing_player=True):
+    def next_pace(self, node, depth=5, maximizing_player=True):
         if node.end():
             return None
         best_choice = self.search(node, depth, ai.min_value, ai.max_value, maximizing_player)

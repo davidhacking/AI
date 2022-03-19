@@ -1,8 +1,9 @@
 import chess
+import alpha_beta_ai
 
 """
  chess_map = [
-   0      1     2     3     4     5     6     7     8
+     0      1     2     3     4     5     6     7     8
  0 ["C0", 'M0', 'X0', 'S0', 'J0', 'S1', 'X1', 'M1', "C1"],
  1 [None, None, None, None, None, None, None, None, None],
  2 [None, 'P0', None, None, None, None, None, 'P1', None],
@@ -76,7 +77,15 @@ def map_next_all_nodes():
     assert len(nodes) == 44
 
 
+def play_chinese_chess():
+    chinese_chess = chess.ChessMap(chess.init_chess_pieces)
+    ab_ai = alpha_beta_ai.AlphaBetaAI()
+    pace = ab_ai.next_pace(chinese_chess, depth=20)
+    pass
+
+
 if __name__ == '__main__':
+    play_chinese_chess()
     test_z()
     map_next_all_nodes()
     test_chess_map_str()

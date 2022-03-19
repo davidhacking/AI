@@ -106,6 +106,18 @@ class ChessMap(ai.BaseNode):
             nodes.append(node)
         return nodes
 
+    # 评估玩家的收益
+    def evaluate(self):
+        total = 0
+        for i in range(0, 10):
+            for j in range(0, 9):
+                piece = self._chess_map[i][j]
+                if piece is None:
+                    continue
+                sign = 1 if piece.camp() == red_camp else -1
+                total += sign * piece.evaluate(j, i)
+        return total
+
     def __str__(self):
         return """
          last_pace={}
@@ -165,6 +177,9 @@ class BasePiece:
         piece._name = self._name
         piece._camp_chess_name = self._camp_chess_name
         piece._value_map = self._value_map
+
+    def evaluate(self, x, y):
+        return self._value_map[y][x]
 
     def pos(self):
         return self._pos
