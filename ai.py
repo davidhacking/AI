@@ -31,8 +31,10 @@ class Pace:
 
 class BaseNode:
     def __init__(self, paces=None):
-        self.paces = paces
-        if self.paces is not None and len(self.paces) > 0:
+        if paces is None:
+            paces = []
+        self._paces = paces
+        if self._paces is not None and len(self._paces) > 0:
             self._last_pace = paces[-1]
 
     def last_pace(self):
@@ -40,16 +42,16 @@ class BaseNode:
 
     def play(self, pace):
         self._last_pace = pace
-        self.paces.append(pace)
+        self._paces.append(pace)
 
     def rollback(self):
-        self.paces.pop()
+        self._paces.pop()
         self._last_pace = None
-        if len(self.paces) > 0:
-            self._last_pace = self.paces[-1]
+        if len(self._paces) > 0:
+            self._last_pace = self._paces[-1]
 
     def key(self):
-        return "|".join([str(p) for p in self.paces])
+        return "|".join([str(p) for p in self._paces])
 
     def end(self):
         pass

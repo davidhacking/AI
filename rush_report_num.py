@@ -25,7 +25,7 @@ class RushReportNumNode(ai.BaseNode):
         player = ai.player_type_player if maximizing_player else ai.player_type_ai
         nodes = []
         for s in self.steps:
-            paces = ai.copy_pace(self.paces)
+            paces = ai.copy_pace(self._paces)
             node = RushReportNumNode(paces=paces, steps=self.steps, total=self.total)
             node.play(ai.Pace(player, s))
             nodes.append(node)

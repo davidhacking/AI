@@ -1,15 +1,30 @@
 import copy
 import chess_value
+import ai
 
 red_camp = 1
 black_camp = 2
 
 piece_index0 = 0
 piece_index1 = 1
+piece_index2 = 2
+piece_index3 = 3
+piece_index4 = 4
 
 
-class ChessMap:
-    def __init__(self, pieces=None):
+class PaceStrategy:
+    def __init__(self, piece, to_pos):
+        self.piece = piece
+        self.from_pos = piece.pos()
+        self.to_pos = to_pos
+
+    def __str__(self):
+        return "{}_{}_{}".format(self.piece.name(), self.from_pos, self.to_pos)
+
+
+class ChessMap(ai.BaseNode):
+    def __init__(self, pieces=None, paces=None):
+        super().__init__()
         self._chess_map = []
         self.J0 = None
         self.j0 = None
@@ -25,26 +40,102 @@ class ChessMap:
                     self.J0 = piece
                 elif piece.name() == j0.name():
                     self.j0 = piece
+        if paces is not None:
+            for p in paces:
+                self.move_pace(p)
+
+    def move_pace(self, pace):
+        old_pos = pace.strategy.piece.pos()
+        piece = self.get_piece(old_pos.x, old_pos.y)
+        new_pos = pace.strategy.to_pos
+        piece.move(new_pos, self)
+
+    def play(self, pace):
+        super().play(pace)
+        self.move_pace(pace)
 
     def get_piece(self, x, y):
         return self._chess_map[y][x]
+
+    def move_piece_to_pos(self, pos, piece):
+        x, y = pos.x, pos.y
+        aim_piece = self.get_piece(x, y)
+        if aim_piece is not None:
+            if aim_piece.name() == self.j0.name():
+                self.j0 = None
+            if aim_piece.name() == self.J0.name():
+                self.J0 = None
+        self._chess_map[y][x] = piece
+        self._chess_map[piece.y()][piece.x()] = None
 
     def copy(self):
         chess_map = ChessMap()
         for i in range(0, 10):
             for j in range(0, 9):
-                chess_map._chess_map[i][j] = self._chess_map[i][j].copy()
-                piece = chess_map._chess_map[i][j]
+                piece = self._chess_map[i][j]
+                if piece is None:
+                    continue
+                piece = piece.copy()
+                chess_map._chess_map[i][j] = piece
                 if piece.name() == J0.name():
                     chess_map.J0 = piece
                 elif piece.name() == j0.name():
                     chess_map.j0 = piece
+        return chess_map
+
+    def end(self):
+        return self.j0 is None or self.J0 is None
+
+    def next_all_nodes(self, maximizing_player):
+        camp = red_camp if maximizing_player else black_camp
+        player = ai.player_type_player if maximizing_player else ai.player_type_ai
+        nodes = []
+        paces = []
+        for i in range(0, 10):
+            for j in range(0, 9):
+                piece = self._chess_map[i][j]
+                if piece is None:
+                    continue
+                if camp != piece.camp():
+                    continue
+                for pos in piece.next_all_pos(self):
+                    paces.append(ai.Pace(player, PaceStrategy(piece, pos)))
+        for pace in paces:
+            node = self.copy()
+            node.play(pace)
+            nodes.append(node)
+        return nodes
+
+    def __str__(self):
+        return """
+         last_pace={}
+            0      1     2     3     4     5     6     7     8
+         0 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         1 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         2 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         3 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         4 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         5 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         6 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         7 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         8 {}, {}, {}, {}, {}, {}, {}, {}, {},
+         9 {}, {}, {}, {}, {}, {}, {}, {}, {},
+        """.format(self.last_pace(), *[self._chess_map[i][j] for i in range(0, 10) for j in range(0, 9)])
 
 
 class Position:
     def __init__(self, x=0, y=0):
         self.x = x
         self.y = y
+
+    def __eq__(self, pos):
+        return self.x == pos.x and self.y == pos.y
+
+    def __str__(self):
+        return "({}, {})".format(self.x, self.y)
+
+    def copy(self):
+        return Position(self.x, self.y)
 
 
 class BasePiece:
@@ -68,7 +159,7 @@ class BasePiece:
 
     def base_copy(self, piece):
         piece._camp = self._camp
-        piece._pos = self._pos
+        piece._pos = self._pos.copy()
         piece._index_name = self._index_name
         piece._alive = self._alive
         piece._name = self._name
@@ -87,7 +178,8 @@ class BasePiece:
     def y(self):
         return self._pos.y
 
-    def move(self, pos):
+    def move(self, pos, chess_map):
+        chess_map.move_piece_to_pos(pos, self)
         self._pos = pos
 
     def camp_chess_name(self):
@@ -99,7 +191,9 @@ class BasePiece:
     def name(self):
         if self._name is not None:
             return self._name
-        self._name = "{}{}{}".format(self.__class__.__name__, self._camp, self._index_name)
+        self._name = "{}_{}{}".format("R" if self._camp == red_camp else "B",
+                                      self.__class__.__name__.replace("Chess", ""),
+                                      self._index_name)
         return self._name
 
     def __str__(self):
@@ -107,6 +201,15 @@ class BasePiece:
 
     def value(self):
         return self._value_map[self._pos.y][self._pos.x]
+
+    def next_all_pos(self, chess_map):
+        pass
+
+
+class ChessIterParam:
+    def __init__(self, res, flag=False):
+        self.res = res
+        self.flag = flag
 
 
 class ChessC(BasePiece):
@@ -118,29 +221,50 @@ class ChessC(BasePiece):
         self.base_copy(res)
         return res
 
+    def iter_piece(self, x, y, chess_map, param):
+        piece = chess_map.get_piece(x, y)
+        if piece is None:
+            param.res.append(Position(x, y))
+            return True
+        if piece is not None:
+            if piece.camp() != self.camp():
+                param.res.append(Position(x, y))
+            return False
+        return True
+
     def next_all_pos(self, chess_map):
-        res = []
-        # 左右侧检索
-        for i in range(0, 9):
-            if i == self.x():
-                continue
-            piece = chess_map.get_piece(i, self.y())
-            if piece is not None:
-                if piece.camp() != self.camp():
-                    res.append(piece.pos())
-                break
-            res.append(Position(i, self.y()))
-        # 上下侧检索
-        for i in range(0, 10):
-            if i == self.y():
-                continue
-            piece = chess_map.get_piece(self.x(), i)
-            if piece is not None:
-                if piece.camp() != self.camp():
-                    res.append(piece.pos())
-                break
-            res.append(Position(self.x(), i))
-        return res
+        x = self.x()
+        y = self.y()
+        return iter_piece_next_pos(self, chess_map, x, y)
+
+
+def iter_piece_next_pos(self, chess_map, x, y):
+    res = []
+    param = ChessIterParam(res)
+    # 左侧检索
+    for i in range(x - 1, -1, -1):
+        if not self.iter_piece(i, y, chess_map, param):
+            break
+    res = param.res
+    param = ChessIterParam(res)
+    # 右侧检索
+    for i in range(x + 1, 9):
+        if not self.iter_piece(i, y, chess_map, param):
+            break
+    res = param.res
+    param = ChessIterParam(res)
+    # 上侧检索
+    for i in range(y - 1, -1, -1):
+        if not self.iter_piece(x, i, chess_map, param):
+            break
+    res = param.res
+    param = ChessIterParam(res)
+    # 下侧检索
+    for i in range(y + 1, 10):
+        if not self.iter_piece(x, i, chess_map, param):
+            break
+    res = param.res
+    return res
 
 
 class ChessM(BasePiece):
@@ -171,7 +295,7 @@ class ChessM(BasePiece):
         if can_reach(self, chess_map, x - 2, y - 1, x - 1, y):
             res.append(Position(x - 2, y - 1))
         if can_reach(self, chess_map, x - 1, y - 2, x, y - 1):
-            res.append(Position(x, y - 2))
+            res.append(Position(x - 1, y - 2))
         return res
 
 
@@ -180,7 +304,7 @@ def can_reach(self, chess_map, end_x, end_y, ban_x=None, ban_y=None, x_range=(0,
     if not x_range[0] <= end_x <= x_range[1] or not y_range[0] <= end_y <= y_range[1]:
         return False
     if (ban_x is not None and not x_range[0] <= ban_x <= x_range[1]) or \
-            not (ban_y is not None and y_range[0] <= ban_y <= y_range[1]):
+            (ban_y is not None and not y_range[0] <= ban_y <= y_range[1]):
         return False
     if ban_x is not None and ban_y is not None:
         piece = chess_map.get_piece(ban_x, ban_y)
@@ -273,12 +397,7 @@ class ChessJ(BasePiece):
                 flag = False
         if flag:
             res.append(Position(adversary.x(), adversary.y()))
-
-
-class ChessPParam:
-    def __init__(self, res, flag):
-        self.res = res
-        self.flag = flag
+        return res
 
 
 class ChessP(BasePiece):
@@ -303,27 +422,9 @@ class ChessP(BasePiece):
         return True
 
     def next_all_pos(self, chess_map):
-        res = []
         x = self.x()
         y = self.y()
-        # 左侧检索
-        param = ChessPParam(res, False)
-        for i in range(x - 1, -1, -1):
-            self.iter_piece(i, y, chess_map, param)
-        res = param.res
-        param = ChessPParam(res, False)
-        for i in range(x + 1, 9):
-            self.iter_piece(i, y, chess_map, param)
-        res = param.res
-        param = ChessPParam(res, False)
-        for i in range(y - 1, -1, -1):
-            self.iter_piece(x, i, chess_map, param)
-        res = param.res
-        param = ChessPParam(res, False)
-        for i in range(y + 1, 10):
-            self.iter_piece(x, i, chess_map, param)
-        res = param.res
-        return res
+        return iter_piece_next_pos(self, chess_map, x, y)
 
 
 class ChessZ(BasePiece):
@@ -342,9 +443,9 @@ class ChessZ(BasePiece):
         if self.camp() == red_camp:
             if can_reach(self, chess_map, x, y - 1):
                 res.append(Position(x, y - 1))
-            if can_reach(self, chess_map, x + 1, y, y_range=(4, 9)):
+            if can_reach(self, chess_map, x + 1, y, y_range=(0, 4)):
                 res.append(Position(x + 1, y))
-            if can_reach(self, chess_map, x - 1, y, y_range=(4, 9)):
+            if can_reach(self, chess_map, x - 1, y, y_range=(0, 4)):
                 res.append(Position(x - 1, y))
         else:
             if can_reach(self, chess_map, x, y + 1):
@@ -401,15 +502,15 @@ P0 = ChessP(black_camp, piece_index0, Position(1, 2))
 P1 = ChessP(black_camp, piece_index1, Position(7, 2))
 
 z0 = ChessZ(red_camp, piece_index0, Position(0, 6))
-z1 = ChessZ(red_camp, piece_index0, Position(2, 6))
-z2 = ChessZ(red_camp, piece_index0, Position(4, 6))
-z3 = ChessZ(red_camp, piece_index0, Position(6, 6))
-z4 = ChessZ(red_camp, piece_index0, Position(8, 6))
+z1 = ChessZ(red_camp, piece_index1, Position(2, 6))
+z2 = ChessZ(red_camp, piece_index2, Position(4, 6))
+z3 = ChessZ(red_camp, piece_index3, Position(6, 6))
+z4 = ChessZ(red_camp, piece_index4, Position(8, 6))
 Z0 = ChessZ(black_camp, piece_index0, Position(0, 3))
-Z1 = ChessZ(black_camp, piece_index0, Position(2, 3))
-Z2 = ChessZ(black_camp, piece_index0, Position(4, 3))
-Z3 = ChessZ(black_camp, piece_index0, Position(6, 3))
-Z4 = ChessZ(black_camp, piece_index0, Position(8, 3))
+Z1 = ChessZ(black_camp, piece_index1, Position(2, 3))
+Z2 = ChessZ(black_camp, piece_index2, Position(4, 3))
+Z3 = ChessZ(black_camp, piece_index3, Position(6, 3))
+Z4 = ChessZ(black_camp, piece_index4, Position(8, 3))
 
 init_chess_pieces = [
     c0,
