@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, request, redirect
-from flask import jsonify
-import json
-import sys
-from flask import render_template
 
 import ai
 import chess
 import alpha_beta_ai
 
-app = Flask(__name__, static_folder='chess_web', static_url_path='/chess_web')
+app = Flask(__name__, static_folder='../chess_web', static_url_path='/chess_web')
 
 chinese_chess = chess.ChessMap(chess.init_chess_pieces)
 

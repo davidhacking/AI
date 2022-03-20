@@ -44,6 +44,11 @@ class ChessMap(ai.BaseNode):
             for p in paces:
                 self.move_pace(p)
 
+    def winner(self):
+        if self.j0 is None:
+            return black_camp
+        return red_camp
+
     def move_pace(self, pace):
         old_pos = pace.strategy.piece.pos()
         piece = self.get_piece(old_pos.x, old_pos.y)
@@ -136,6 +141,7 @@ class ChessMap(ai.BaseNode):
          8 {}, {}, {}, {}, {}, {}, {}, {}, {},
          9 {}, {}, {}, {}, {}, {}, {}, {}, {},
         """.format(self.last_pace(), *[self._chess_map[i][j] for i in range(0, 10) for j in range(0, 9)])
+
 
 class Position:
     def __init__(self, x=0, y=0):
@@ -576,6 +582,41 @@ init_chess_pieces = [
     Z3,
     Z4,
 ]
+
+chess_pieces_dict = {
+    "c0": c0,
+    "c1": c1,
+    "C0": C0,
+    "C1": C1,
+    "m0": m0,
+    "m1": m1,
+    "M0": M0,
+    "M1": M1,
+    "x0": x0,
+    "x1": x1,
+    "X0": X0,
+    "X1": X1,
+    "s0": s0,
+    "s1": s1,
+    "S0": S0,
+    "S1": S1,
+    "j0": j0,
+    "J0": J0,
+    "p0": p0,
+    "p1": p1,
+    "P0": P0,
+    "P1": P1,
+    "z0": z0,
+    "z1": z1,
+    "z2": z2,
+    "z3": z3,
+    "z4": z4,
+    "Z0": Z0,
+    "Z1": Z1,
+    "Z2": Z2,
+    "Z3": Z3,
+    "Z4": Z4,
+}
 
 if __name__ == '__main__':
     pass
