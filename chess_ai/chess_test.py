@@ -141,7 +141,7 @@ def test01():
     assert chess.red_camp == play_by_ai(chinese_chess)
 
 
-# 双兵双仕
+# 双兵双仕 https://www.xiangqiqipu.com/Category/View-10242.html
 def test02():
     chinese_chess = read_chess_map_from_str(
         """

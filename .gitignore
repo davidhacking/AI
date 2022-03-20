@@ -4,3 +4,5 @@ __pycache__
 ae_imgs
 vae_imgs
 .DS_Store
+profile.prof
+profile.svg
