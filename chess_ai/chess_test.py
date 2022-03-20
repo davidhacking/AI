@@ -57,17 +57,6 @@ def read_chess_map_from_str(s):
 """
 
 
-def test_play_chinese_chess():
-    chinese_chess = chess.ChessMap(chess.init_chess_pieces)
-    p = chinese_chess.get_piece(7, 7)
-    chinese_chess.play(ai.Pace(ai.player_type_player, chess.PaceStrategy(p, chess.Position(4, 7))))
-    piece = chinese_chess.get_piece(7, 0)
-    chinese_chess.play(ai.Pace(ai.player_type_ai, chess.PaceStrategy(piece, chess.Position(6, 2))))
-    ab_ai = alpha_beta_ai.AlphaBetaAI()
-    choice = ab_ai.next_pace(chinese_chess, depth=20)
-    chinese_chess.play(choice.pace)
-
-
 def test_play_last_stage1():
     chinese_chess = chess.ChessMap([
         chess.ChessJ(chess.red_camp, chess.piece_index0, chess.Position(4, 9)),
@@ -163,6 +152,28 @@ def test02():
     assert chess.red_camp == play_by_ai(chinese_chess)
 
 
+# 双象双兵 https://www.xiangqiqipu.com/Category/View-10235.html
+def test03():
+    chinese_chess = read_chess_map_from_str(
+        """
+        [
+             0,    1,    2,    3,    4,    5,    6,    7,    8,
+         0, [None, None, None, None, None, None, None, None, None],
+         1, [None, 'z3', None, 'J0', None, None, None, None, None],
+         2, [None, None, None, None, 'X0', None, None, None, None],
+         3, [None, None, None, 'z4', None, None, None, None, None],
+         4, [None, None, None, None, None, None, 'X0', None, None],
+         5, [None, None, None, None, None, None, None, None, None],
+         6, [None, None, None, None, None, None, None, None, None],
+         7, [None, None, None, None, None, None, None, None, None],
+         8, [None, None, None, None, None, None, None, None, None],
+         9, [None, None, None, None, 'j0', None, None, None, None]
+        ]
+        """
+    )
+    assert chess.red_camp == play_by_ai(chinese_chess)
+
+
 def test_next_all_nodes():
     chess_map = chess.ChessMap(chess.init_chess_pieces)
     nodes = chess_map.next_all_nodes(True)
@@ -175,5 +186,6 @@ def test_next_all_nodes():
 
 if __name__ == '__main__':
     # test_next_all_nodes()
-    test01()
-    test02()
+    # test01()
+    # test02()
+    test03()
