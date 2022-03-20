@@ -1,5 +1,6 @@
 import chess
 import alpha_beta_ai
+import ai
 
 """
  chess_map = [
@@ -79,9 +80,13 @@ def map_next_all_nodes():
 
 def play_chinese_chess():
     chinese_chess = chess.ChessMap(chess.init_chess_pieces)
+    p = chinese_chess.get_piece(7, 7)
+    chinese_chess.play(ai.Pace(ai.player_type_player, chess.PaceStrategy(p, chess.Position(4, 7))))
+    piece = chinese_chess.get_piece(7, 0)
+    chinese_chess.play(ai.Pace(ai.player_type_ai, chess.PaceStrategy(piece, chess.Position(6, 2))))
     ab_ai = alpha_beta_ai.AlphaBetaAI()
-    pace = ab_ai.next_pace(chinese_chess, depth=20)
-    pass
+    choice = ab_ai.next_pace(chinese_chess, depth=20)
+    chinese_chess.play(choice.pace)
 
 
 if __name__ == '__main__':
