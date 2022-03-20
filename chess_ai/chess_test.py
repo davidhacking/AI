@@ -184,7 +184,31 @@ def test_next_all_nodes():
     print(chess_map)
 
 
+def test_p_pos():
+    chinese_chess = read_chess_map_from_str(
+        """
+        [
+             0,    1,    2,    3,    4,    5,    6,    7,    8,
+         0, [None, None, None, None, None, None, None, None, None],
+         1, [None, None, None, None, None, None, None, None, None],
+         2, [None, None, None, None, None, None, None, None, None],
+         3, [None, None, None, None, None, None, None, None, None],
+         4, [None, None, None, None, 'Z0', None, None, None, None],
+         5, [None, None, None, None, 'p1', None, None, None, None],
+         6, [None, None, None, None, 'z3', None, None, None, None],
+         7, [None, None, None, None, 'p0', None, None, None, None],
+         8, [None, None, None, None, None, None, None, None, None],
+         9, [None, None, None, None, None, None, None, None, None]
+        ]
+        """
+    )
+    piece = chinese_chess.get_piece(4, 7)
+    pos = piece.next_all_pos(chinese_chess)
+    pass
+
+
 if __name__ == '__main__':
+    test_p_pos()
     # test_next_all_nodes()
     # test01()
     # test02()

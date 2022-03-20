@@ -462,8 +462,9 @@ class ChessP(BasePiece):
         if piece is None and not param.flag:
             param.res.append(Position(x, y))
             return True
-        if piece is not None and param.flag and piece.camp() != self.camp():
-            param.res.append(Position(x, y))
+        if piece is not None and param.flag:
+            if piece.camp() != self.camp():
+                param.res.append(Position(x, y))
             return False
         if piece is not None and not param.flag:
             param.flag = True
