@@ -34,6 +34,7 @@ class BaseNode:
         if paces is None:
             paces = []
         self._paces = paces
+        self._last_pace = None
         if self._paces is not None and len(self._paces) > 0:
             self._last_pace = paces[-1]
 
@@ -58,6 +59,12 @@ class BaseNode:
 
     def next_all_nodes(self, maximizing_player):
         pass
+
+    def base_copy(self, child):
+        child._paces = []
+        for p in self._paces:
+            child._paces.append(p)
+        child._last_pace = self._last_pace
 
     # 评估玩家的收益
     def evaluate(self):
@@ -84,6 +91,7 @@ class Tree:
         self.node = None
         self.value = 0
         self.children = []
+        self.depth = None
 
     def add_new_child(self):
         t = type_min if self.min_max_type == type_max else type_max

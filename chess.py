@@ -70,6 +70,7 @@ class ChessMap(ai.BaseNode):
 
     def copy(self):
         chess_map = ChessMap()
+        self.base_copy(chess_map)
         for i in range(0, 10):
             for j in range(0, 9):
                 piece = self._chess_map[i][j]
@@ -98,8 +99,10 @@ class ChessMap(ai.BaseNode):
                     continue
                 if camp != piece.camp():
                     continue
-                for pos in piece.next_all_pos(self):
+                piece_paces = piece.next_all_pos(self)
+                for pos in piece_paces:
                     paces.append(ai.Pace(player, PaceStrategy(piece, pos)))
+        paces.sort(key=lambda p: p.strategy.piece.value(p.strategy.to_pos.x, p.strategy.to_pos.y), reverse=True)
         for pace in paces:
             node = self.copy()
             node.play(pace)
@@ -133,7 +136,6 @@ class ChessMap(ai.BaseNode):
          8 {}, {}, {}, {}, {}, {}, {}, {}, {},
          9 {}, {}, {}, {}, {}, {}, {}, {}, {},
         """.format(self.last_pace(), *[self._chess_map[i][j] for i in range(0, 10) for j in range(0, 9)])
-
 
 class Position:
     def __init__(self, x=0, y=0):
@@ -214,8 +216,12 @@ class BasePiece:
     def __str__(self):
         return self.name()
 
-    def value(self):
-        return self._value_map[self._pos.y][self._pos.x]
+    def value(self, x=None, y=None):
+        if x is None:
+            x = self.x()
+        if y is None:
+            y = self.y()
+        return self._value_map[y][x]
 
     def next_all_pos(self, chess_map):
         pass
@@ -357,7 +363,7 @@ class ChessX(BasePiece):
 
 class ChessS(BasePiece):
     def __init__(self, camp=None, index_name=None, pos=None):
-        super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+        super().__init__(camp, index_name, chess_value.chess_s_value, pos)
 
     def copy(self):
         res = ChessS()
@@ -383,12 +389,19 @@ class ChessS(BasePiece):
 
 class ChessJ(BasePiece):
     def __init__(self, camp=None, index_name=None, pos=None):
-        super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+        super().__init__(camp, index_name, chess_value.chess_j_value, pos)
 
     def copy(self):
         res = ChessJ()
         self.base_copy(res)
         return res
+
+    def move(self, pos, chess_map):
+        super().move(pos, chess_map)
+        if self.camp() == red_camp:
+            chess_map.j0 = self
+        else:
+            chess_map.J0 = self
 
     def next_all_pos(self, chess_map):
         res = []
@@ -405,19 +418,21 @@ class ChessJ(BasePiece):
         if can_reach(self, chess_map, x + 1, y, ban_x=None, ban_y=None, x_range=x_range, y_range=y_range):
             res.append(Position(x + 1, y))
         adversary = chess_map.J0 if self.camp() == red_camp else chess_map.j0
-        flag = True
-        for i in range(chess_map.J0.y() + 1, chess_map.j0.y()):
-            piece = chess_map.get_piece(self.x(), i)
-            if piece is not None:
-                flag = False
-        if flag:
-            res.append(Position(adversary.x(), adversary.y()))
+        if adversary.x() == self.x():
+            flag = True
+            for i in range(chess_map.J0.y() + 1, chess_map.j0.y()):
+                piece = chess_map.get_piece(self.x(), i)
+                if piece is not None:
+                    flag = False
+                    break
+            if flag:
+                res.append(Position(adversary.x(), adversary.y()))
         return res
 
 
 class ChessP(BasePiece):
     def __init__(self, camp=None, index_name=None, pos=None):
-        super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+        super().__init__(camp, index_name, chess_value.chess_p_value, pos)
 
     def copy(self):
         res = ChessP()
@@ -444,7 +459,7 @@ class ChessP(BasePiece):
 
 class ChessZ(BasePiece):
     def __init__(self, camp=None, index_name=None, pos=None):
-        super().__init__(camp, index_name, chess_value.chess_x_value, pos)
+        super().__init__(camp, index_name, chess_value.chess_z_value, pos)
 
     def copy(self):
         res = ChessZ()

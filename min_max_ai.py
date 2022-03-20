@@ -7,10 +7,10 @@ class MinMaxAI:
         self.value_cache = {}
         self.tree = ai.Tree(0, ai.type_min)
 
-    def next_pace(self, node, depth=4):
+    def next_pace(self, node, depth=4, maximizing_player=True):
         if node.end():
             return None
-        best_choice = self.search(node, depth, True, self.tree)
+        best_choice = self.search(node, depth, maximizing_player, self.tree)
         return best_choice
 
     def search(self, node, depth, maximizing_player, debug_tree=None):
@@ -26,11 +26,13 @@ class MinMaxAI:
             self.value_cache[key] = choice
             debug_tree.node = key
             debug_tree.value = choice.value
+            debug_tree.depth = depth
             return choice
         if maximizing_player:
             v = ai.min_value
             best_pace = None
-            for child in node.next_all_nodes(maximizing_player):
+            nodes = node.next_all_nodes(maximizing_player)
+            for child in nodes:
                 if child is None:
                     break
                 t_child = debug_tree.add_new_child()

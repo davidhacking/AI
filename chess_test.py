@@ -1,6 +1,10 @@
 import chess
 import alpha_beta_ai
 import ai
+import min_max_ai
+
+# ai_creator = min_max_ai.MinMaxAI
+ai_creator = alpha_beta_ai.AlphaBetaAI
 
 """
  chess_map = [
@@ -78,7 +82,7 @@ def map_next_all_nodes():
     assert len(nodes) == 44
 
 
-def play_chinese_chess():
+def test_play_chinese_chess():
     chinese_chess = chess.ChessMap(chess.init_chess_pieces)
     p = chinese_chess.get_piece(7, 7)
     chinese_chess.play(ai.Pace(ai.player_type_player, chess.PaceStrategy(p, chess.Position(4, 7))))
@@ -89,11 +93,42 @@ def play_chinese_chess():
     chinese_chess.play(choice.pace)
 
 
+def test_play_last_stage1():
+    chinese_chess = chess.ChessMap([
+        chess.ChessJ(chess.red_camp, chess.piece_index0, chess.Position(4, 9)),
+        chess.ChessJ(chess.black_camp, chess.piece_index0, chess.Position(3, 0)),
+        chess.ChessC(chess.red_camp, chess.piece_index0, chess.Position(0, 9)),
+    ])
+    ab_ai = ai_creator()
+    choice = ab_ai.next_pace(chinese_chess, depth=4)
+    chinese_chess.play(choice.pace)
+    ab_ai = ai_creator()
+    choice = ab_ai.next_pace(chinese_chess, depth=4, maximizing_player=False)
+    chinese_chess.play(choice.pace)
+    ab_ai = ai_creator(debug=True)
+    choice = ab_ai.next_pace(chinese_chess, depth=4)
+    chinese_chess.play(choice.pace)
+    assert chinese_chess.end()
+
+
+def test_eat_J0():
+    chinese_chess = chess.ChessMap([
+        chess.ChessJ(chess.red_camp, chess.piece_index0, chess.Position(3, 9)),
+        chess.ChessJ(chess.black_camp, chess.piece_index0, chess.Position(3, 0)),
+        chess.ChessC(chess.red_camp, chess.piece_index0, chess.Position(0, 9)),
+    ])
+    piece = chinese_chess.get_piece(3, 9)
+    chinese_chess.play(ai.Pace(ai.player_type_player, chess.PaceStrategy(piece, chess.Position(3, 0))))
+    assert chinese_chess.J0 is None
+
+
 if __name__ == '__main__':
-    play_chinese_chess()
-    test_z()
-    map_next_all_nodes()
-    test_chess_map_str()
-    test_chess_c()
-    test_chess_c2()
-    test_chess_m()
+    # test_eat_J0()
+    test_play_last_stage1()
+    # test_play_chinese_chess()
+    # test_z()
+    # map_next_all_nodes()
+    # test_chess_map_str()
+    # test_chess_c()
+    # test_chess_c2()
+    # test_chess_m()
