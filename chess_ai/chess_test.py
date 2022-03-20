@@ -1,9 +1,9 @@
 import chess
-import alpha_beta_ai
+import alpha_beta_ai_v2
 import ai
 
 # ai_creator = min_max_ai.MinMaxAI
-ai_creator = alpha_beta_ai.AlphaBetaAI
+ai_creator = alpha_beta_ai_v2.AlphaBetaAIV2
 
 init_chess_map_str = """
  [
@@ -163,6 +163,17 @@ def test02():
     assert chess.red_camp == play_by_ai(chinese_chess)
 
 
+def test_next_all_nodes():
+    chess_map = chess.ChessMap(chess.init_chess_pieces)
+    nodes = chess_map.next_all_nodes(True)
+    print("node_len={}".format(len(nodes)))
+    for i, node in enumerate(nodes):
+        print(i, node)
+    assert len(nodes) == 44
+    print(chess_map)
+
+
 if __name__ == '__main__':
+    # test_next_all_nodes()
     test01()
     test02()

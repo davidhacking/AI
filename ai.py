@@ -29,6 +29,31 @@ class Pace:
         return hash(self.__str__())
 
 
+class NextNodes:
+    def __init__(self, node, paces):
+        self._node = node
+        self._paces = paces
+        self._index = 0
+        self._length = len(paces)
+
+    def __iter__(self):
+        return self
+
+    def __len__(self):
+        return self._length
+
+    def __next__(self):
+        if self._index >= self._length:
+            raise StopIteration
+        i = self._index
+        self._index += 1
+        self._node.play(self._paces[i])
+        return self._node
+
+    def rollback(self):
+        self._node.rollback()
+
+
 class BaseNode:
     def __init__(self, paces=None):
         if paces is None:
@@ -46,10 +71,12 @@ class BaseNode:
         self._paces.append(pace)
 
     def rollback(self):
+        last_pace = self._last_pace
         self._paces.pop()
         self._last_pace = None
         if len(self._paces) > 0:
             self._last_pace = self._paces[-1]
+        return last_pace
 
     def key(self):
         return "|".join([str(p) for p in self._paces])

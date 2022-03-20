@@ -13,10 +13,11 @@ piece_index4 = 4
 
 
 class PaceStrategy:
-    def __init__(self, piece, to_pos):
+    def __init__(self, piece, to_pos, chess_map):
         self.piece = piece
         self.from_pos = piece.pos()
         self.to_pos = to_pos
+        self.die_piece = chess_map.get_piece(to_pos.x, to_pos.y)
 
     def __str__(self):
         return "{}_{}_{}".format(self.piece.name(), self.from_pos, self.to_pos)
@@ -95,7 +96,6 @@ class ChessMap(ai.BaseNode):
     def next_all_nodes(self, maximizing_player):
         camp = red_camp if maximizing_player else black_camp
         player = ai.player_type_player if maximizing_player else ai.player_type_ai
-        nodes = []
         paces = []
         for i in range(0, 10):
             for j in range(0, 9):
@@ -106,14 +106,25 @@ class ChessMap(ai.BaseNode):
                     continue
                 piece_paces = piece.next_all_pos(self)
                 for pos in piece_paces:
-                    paces.append(ai.Pace(player, PaceStrategy(piece, pos)))
+                    paces.append(ai.Pace(player, PaceStrategy(piece, pos, self)))
         paces.sort(key=lambda p: p.strategy.piece.value(p.strategy.to_pos.x, p.strategy.to_pos.y) -
                                  p.strategy.piece.value(), reverse=True)
-        for pace in paces:
-            node = self.copy()
-            node.play(pace)
-            nodes.append(node)
-        return nodes
+        return ai.NextNodes(self, paces)
+
+    def rollback(self):
+        last_pace = super().rollback()
+        s = last_pace.strategy
+        s.piece._pos = s.from_pos
+        self._chess_map[s.piece.y()][s.piece.x()] = s.piece
+        p = s.die_piece
+        self._chess_map[s.to_pos.y][s.to_pos.x] = p
+        if p is not None:
+            p._pos = s.to_pos
+            if p.name() == J0.name():
+                self.J0 = p
+            elif p.name() == j0.name():
+                self.j0 = p
+        return last_pace
 
     # 评估玩家的收益
     def evaluate(self):

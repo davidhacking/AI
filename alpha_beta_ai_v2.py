@@ -4,7 +4,7 @@ import ai
 # https://www.jianshu.com/p/3b464aeba078
 
 
-class AlphaBetaAI:
+class AlphaBetaAIV2:
     def __init__(self, debug=False):
         self.value_cache = {}
         self.debug = debug
@@ -41,7 +41,7 @@ class AlphaBetaAI:
             v = ai.min_value
             best_pace = None
             nodes = node.next_all_nodes(maximizing_player)
-            for child in nodes:
+            for child in iter(nodes):
                 if child is None:
                     break
                 if best_pace is None:
@@ -51,6 +51,7 @@ class AlphaBetaAI:
                 if choice.value > v:
                     v = choice.value
                     best_pace = child.last_pace()
+                nodes.rollback()
                 alpha = max(alpha, v)
                 if beta <= alpha:
                     break
@@ -61,7 +62,7 @@ class AlphaBetaAI:
         v = ai.max_value
         best_pace = None
         nodes = node.next_all_nodes(maximizing_player)
-        for child in nodes:
+        for child in iter(nodes):
             if child is None:
                 break
             if best_pace is None:
@@ -71,6 +72,7 @@ class AlphaBetaAI:
             if choice.value < v:
                 v = choice.value
                 best_pace = child.last_pace()
+            nodes.rollback()
             beta = min(beta, v)
             if beta <= alpha:
                 break
