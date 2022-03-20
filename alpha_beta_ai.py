@@ -38,26 +38,11 @@ class AlphaBetaAI:
             self.add_debug(debug_tree, key, choice.value, depth)
             return choice
         if maximizing_player:
-            v = ai.min_value
-            best_pace = None
-            nodes = node.next_all_nodes(maximizing_player)
-            for child in nodes:
-                if child is None:
-                    break
-                if best_pace is None:
-                    best_pace = child.last_pace()
-                choice = self.search(child, depth - 1, alpha, beta, False,
-                                     debug_tree.add_new_child() if self.debug else None)
-                if choice.value > v:
-                    v = choice.value
-                    best_pace = child.last_pace()
-                alpha = max(alpha, v)
-                if beta <= alpha:
-                    break
-            choice = ai.Choice(v, best_pace)
-            self.value_cache[key] = choice
-            self.add_debug(debug_tree, key, choice.value)
-            return choice
+            return self.search_max(alpha, beta, debug_tree, depth, key, maximizing_player, node)
+        choice = self.search_min(alpha, beta, debug_tree, depth, key, maximizing_player, node)
+        return choice
+
+    def search_min(self, alpha, beta, debug_tree, depth, key, maximizing_player, node):
         v = ai.max_value
         best_pace = None
         nodes = node.next_all_nodes(maximizing_player)
@@ -72,6 +57,28 @@ class AlphaBetaAI:
                 v = choice.value
                 best_pace = child.last_pace()
             beta = min(beta, v)
+            if beta <= alpha:
+                break
+        choice = ai.Choice(v, best_pace)
+        self.value_cache[key] = choice
+        self.add_debug(debug_tree, key, choice.value)
+        return choice
+
+    def search_max(self, alpha, beta, debug_tree, depth, key, maximizing_player, node):
+        v = ai.min_value
+        best_pace = None
+        nodes = node.next_all_nodes(maximizing_player)
+        for child in nodes:
+            if child is None:
+                break
+            if best_pace is None:
+                best_pace = child.last_pace()
+            choice = self.search(child, depth - 1, alpha, beta, False,
+                                 debug_tree.add_new_child() if self.debug else None)
+            if choice.value > v:
+                v = choice.value
+                best_pace = child.last_pace()
+            alpha = max(alpha, v)
             if beta <= alpha:
                 break
         choice = ai.Choice(v, best_pace)
