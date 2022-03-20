@@ -66,6 +66,10 @@ class BaseNode:
             child._paces.append(p)
         child._last_pace = self._last_pace
 
+    def clear_paces(self):
+        self._paces = []
+        self._last_pace = None
+
     # 评估玩家的收益
     def evaluate(self):
         pass

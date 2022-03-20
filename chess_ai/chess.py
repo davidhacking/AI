@@ -107,7 +107,8 @@ class ChessMap(ai.BaseNode):
                 piece_paces = piece.next_all_pos(self)
                 for pos in piece_paces:
                     paces.append(ai.Pace(player, PaceStrategy(piece, pos)))
-        paces.sort(key=lambda p: p.strategy.piece.value(p.strategy.to_pos.x, p.strategy.to_pos.y), reverse=True)
+        paces.sort(key=lambda p: p.strategy.piece.value(p.strategy.to_pos.x, p.strategy.to_pos.y) -
+                                 p.strategy.piece.value(), reverse=True)
         for pace in paces:
             node = self.copy()
             node.play(pace)

@@ -98,19 +98,25 @@ def test_eat_J0():
 
 
 def play_by_ai(chinese_chess):
+    pace_num = 0
     while not chinese_chess.end():
-        r_ai = ai_creator()
-        r_choice = r_ai.next_pace(chinese_chess, depth=4)
+        chinese_chess.clear_paces()
+        r_ai = ai_creator(debug=True)
+        r_choice = r_ai.next_pace(chinese_chess, depth=7)
         if r_choice is None:
             break
         chinese_chess.play(r_choice.pace)
-        b_ai = ai_creator()
-        b_choice = b_ai.next_pace(chinese_chess, depth=4, maximizing_player=False)
+        b_ai = ai_creator(debug=True)
+        b_choice = b_ai.next_pace(chinese_chess, depth=7, maximizing_player=False)
         if b_choice is None:
             break
         chinese_chess.play(b_choice.pace)
-        print("red={}, black={}, \nmap={}".format(r_choice, b_choice, chinese_chess))
+        pace_num += 1
+        print("pace={}, red={}, black={}, \nmap={}".format(pace_num, r_choice, b_choice, chinese_chess))
+        pass
     print("the end")
+    winner = chinese_chess.winner()
+    return winner
 
 
 # 单兵孤将
@@ -132,8 +138,31 @@ def test01():
         ]
         """
     )
-    play_by_ai(chinese_chess)
+    assert chess.red_camp == play_by_ai(chinese_chess)
+
+
+# 双兵双仕
+def test02():
+    chinese_chess = read_chess_map_from_str(
+        """
+        [
+             0,    1,    2,    3,    4,    5,    6,    7,    8,
+         0, [None, None, None, 'S1', None, None, None, None, None],
+         1, [None, None, None, None, 'S0', 'J0', None, None, None],
+         2, [None, None, 'z3', None, None, None, None, None, None],
+         3, [None, None, None, 'z4', None, None, None, None, None],
+         4, [None, None, None, None, None, None, None, None, None],
+         5, [None, None, None, None, None, None, None, None, None],
+         6, [None, None, None, None, None, None, None, None, None],
+         7, [None, None, None, None, None, None, None, None, None],
+         8, [None, None, None, None, None, None, None, None, None],
+         9, [None, None, None, None, 'j0', None, None, None, None]
+        ]
+        """
+    )
+    assert chess.red_camp == play_by_ai(chinese_chess)
 
 
 if __name__ == '__main__':
     test01()
+    test02()
