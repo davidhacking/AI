@@ -1,5 +1,5 @@
 import copy
-import chess_value
+import chess_ai.chess_value as chess_value
 import ai
 
 red_camp = 1

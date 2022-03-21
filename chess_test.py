@@ -1,4 +1,4 @@
-import chess
+import chess_ai.chess as chess
 import alpha_beta_ai_v2
 import ai
 
