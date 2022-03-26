@@ -79,8 +79,8 @@ def test_next_all_nodes():
 def test_search_with_bfs():
     node = MoveNumGame("123458670", eight_num_problem_end_state)
     b = bfs.BFS(node)
-    depth = b.search()
-    assert depth == 1
+    paces = b.search()
+    assert len(paces) == 1
 
 
 if __name__ == '__main__':
