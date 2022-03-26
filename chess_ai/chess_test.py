@@ -1,5 +1,5 @@
 import chess_ai.chess as chess
-import alpha_beta_ai_v2
+from ai import alpha_beta_ai_v2
 import ai
 
 # ai_creator = min_max_ai.MinMaxAI
@@ -86,6 +86,7 @@ def test_eat_J0():
     assert chinese_chess.J0 is None
 
 
+# todo 循环检测
 def play_by_ai(chinese_chess):
     pace_num = 0
     while not chinese_chess.end():
@@ -180,6 +181,7 @@ def test_next_all_nodes():
     print("node_len={}".format(len(nodes)))
     for i, node in enumerate(nodes):
         print(i, node)
+        node.rollback()
     assert len(nodes) == 44
     print(chess_map)
 
@@ -209,7 +211,7 @@ def test_p_pos():
 
 if __name__ == '__main__':
     test_p_pos()
-    # test_next_all_nodes()
-    # test01()
-    # test02()
+    test_next_all_nodes()
+    test01()
+    test02()
     test03()

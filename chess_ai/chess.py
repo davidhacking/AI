@@ -1,6 +1,6 @@
 import copy
 import chess_ai.chess_value as chess_value
-import ai
+from ai import ai
 
 red_camp = 1
 black_camp = 2
@@ -93,7 +93,7 @@ class ChessMap(ai.BaseNode):
     def end(self):
         return self.j0 is None or self.J0 is None
 
-    def next_all_nodes(self, maximizing_player):
+    def next_all_nodes(self, maximizing_player=True):
         camp = red_camp if maximizing_player else black_camp
         player = ai.player_type_player if maximizing_player else ai.player_type_ai
         paces = []

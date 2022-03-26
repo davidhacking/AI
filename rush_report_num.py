@@ -1,6 +1,5 @@
-import ai
-import alpha_beta_ai
-import min_max_ai
+from ai import ai
+from ai import alpha_beta_ai, min_max_ai
 
 
 class RushReportNumNode(ai.BaseNode):
@@ -21,7 +20,7 @@ class RushReportNumNode(ai.BaseNode):
         super().play(pace)
         self.cur_sum += pace.strategy
 
-    def next_all_nodes(self, maximizing_player):
+    def next_all_nodes(self, maximizing_player=True):
         player = ai.player_type_player if maximizing_player else ai.player_type_ai
         nodes = []
         for s in self.steps:

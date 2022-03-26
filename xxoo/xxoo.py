@@ -1,6 +1,6 @@
 from collections import defaultdict
 import copy
-import ai
+from ai import ai
 
 win_pattern = [
     [1, 2, 3],

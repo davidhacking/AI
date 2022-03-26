@@ -3,7 +3,7 @@ from flask import Flask, request, redirect
 
 import ai
 import chess_ai.chess as chess
-import alpha_beta_ai_v2
+from ai import alpha_beta_ai_v2
 
 app = Flask(__name__, static_folder='../chess_web', static_url_path='/chess_web')
 

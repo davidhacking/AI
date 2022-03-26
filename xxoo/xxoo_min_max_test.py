@@ -1,10 +1,12 @@
-import xxoo, alpha_beta_ai, ai
+from ai import min_max_ai
+from ai import ai
+import xxoo
 
 
 def test_ai_first_start():
     xo = xxoo.XXOO()
-    mmAI = alpha_beta_ai.AlphaBetaAI()
-    next_pace = mmAI.next_pace(xo)
+    mm_ai = min_max_ai.MinMaxAI()
+    next_pace = mm_ai.next_pace(xo)
     print(next_pace, next_pace.pace == 5)
 
 
@@ -14,9 +16,25 @@ def test_play_must_win():
         4: ai.player_type_ai, 5: ai.player_type_ai, 6: None,
         7: None, 8: None, 9: None,
     })
-    mmAI = alpha_beta_ai.AlphaBetaAI()
-    next_pace = mmAI.next_pace(xo)
+    mm_ai = min_max_ai.MinMaxAI()
+    next_pace = mm_ai.next_pace(xo)
     print(next_pace, next_pace.pace == 3)
+
+
+def test_evaluate():
+    xxoo1 = xxoo.XXOO(paces={
+        1: ai.player_type_player, 2: None, 3: ai.player_type_player,
+        4: ai.player_type_ai, 5: ai.player_type_ai, 6: None,
+        7: None, 8: ai.player_type_player, 9: None,
+    })
+    e1 = xxoo.evaluate(xxoo1.paces, ai.player_type_ai, ai.player_type_player)
+    xxoo2 = xxoo.XXOO(paces={
+        1: ai.player_type_player, 2: None, 3: None,
+        4: ai.player_type_ai, 5: ai.player_type_ai, 6: ai.player_type_player,
+        7: None, 8: ai.player_type_player, 9: None,
+    })
+    e2 = xxoo.evaluate(xxoo2.paces, ai.player_type_ai, ai.player_type_player)
+    pass
 
 
 def test_play_cut_ai():
@@ -25,8 +43,8 @@ def test_play_cut_ai():
         4: ai.player_type_ai, 5: ai.player_type_ai, 6: None,
         7: ai.player_type_ai, 8: ai.player_type_player, 9: None,
     })
-    mmAI = alpha_beta_ai.AlphaBetaAI()
-    next_pace = mmAI.next_pace(ox)
+    mm_ai = min_max_ai.MinMaxAI()
+    next_pace = mm_ai.next_pace(ox)
     print(next_pace, next_pace.pace == 6)
 
 
@@ -36,8 +54,8 @@ def test_play_cut_ai2():
         4: ai.player_type_ai, 5: ai.player_type_ai, 6: None,
         7: None, 8: ai.player_type_player, 9: None,
     })
-    mmAI = alpha_beta_ai.AlphaBetaAI()
-    next_pace = mmAI.next_pace(xo)
+    mm_ai = min_max_ai.MinMaxAI()
+    next_pace = mm_ai.next_pace(xo)
     print(next_pace, next_pace.pace == 6)
 
 
@@ -47,8 +65,8 @@ def test_player_win():
         4: ai.player_type_ai, 5: ai.player_type_player, 6: None,
         7: None, 8: None, 9: None,
     })
-    mmAI = alpha_beta_ai.AlphaBetaAI()
-    next_pace = mmAI.next_pace(xo)
+    mm_ai = min_max_ai.MinMaxAI()
+    next_pace = mm_ai.next_pace(xo)
     print(next_pace, next_pace.pace == 7)
 
 
@@ -76,8 +94,8 @@ def test_interact():
     while not xo.end():
         pace = int(input().strip()[0])
         xo.play(pace, ai.player_type_ai)
-        mmAI = alpha_beta_ai.AlphaBetaAI()
-        choice = mmAI.next_pace(xo)
+        mm_ai = min_max_ai.MinMaxAI()
+        choice = mm_ai.next_pace(xo)
         if choice is None:
             xo.draw_broad()
             break
@@ -88,6 +106,7 @@ def test_interact():
 
 
 if __name__ == '__main__':
+    test_evaluate()
     test_play_cut_ai()
     test_play_cut_ai2()
     test_ai_first_start()

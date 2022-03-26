@@ -1,10 +1,10 @@
-import ai
+from ai import ai
 
 
 # https://www.jianshu.com/p/3b464aeba078
 
 
-class AlphaBetaAIV2:
+class AlphaBetaAI:
     def __init__(self, debug=False):
         self.value_cache = {}
         self.debug = debug
@@ -41,7 +41,7 @@ class AlphaBetaAIV2:
             v = ai.min_value
             best_pace = None
             nodes = node.next_all_nodes(maximizing_player)
-            for child in iter(nodes):
+            for child in nodes:
                 if child is None:
                     break
                 if best_pace is None:
@@ -51,7 +51,6 @@ class AlphaBetaAIV2:
                 if choice.value > v:
                     v = choice.value
                     best_pace = child.last_pace()
-                nodes.rollback()
                 alpha = max(alpha, v)
                 if beta <= alpha:
                     break
@@ -62,7 +61,7 @@ class AlphaBetaAIV2:
         v = ai.max_value
         best_pace = None
         nodes = node.next_all_nodes(maximizing_player)
-        for child in iter(nodes):
+        for child in nodes:
             if child is None:
                 break
             if best_pace is None:
@@ -72,7 +71,6 @@ class AlphaBetaAIV2:
             if choice.value < v:
                 v = choice.value
                 best_pace = child.last_pace()
-            nodes.rollback()
             beta = min(beta, v)
             if beta <= alpha:
                 break

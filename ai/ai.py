@@ -66,6 +66,9 @@ class BaseNode:
     def last_pace(self):
         return self._last_pace
 
+    def paces(self):
+        return self._paces
+
     def play(self, pace):
         self._last_pace = pace
         self._paces.append(pace)
@@ -84,7 +87,7 @@ class BaseNode:
     def end(self):
         pass
 
-    def next_all_nodes(self, maximizing_player):
+    def next_all_nodes(self, maximizing_player=True):
         pass
 
     def base_copy(self, child):
