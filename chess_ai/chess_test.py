@@ -1,6 +1,8 @@
+import time
+
 import chess_ai.chess as chess
 from ai import alpha_beta_ai_v2
-import ai
+from ai import ai
 
 # ai_creator = min_max_ai.MinMaxAI
 ai_creator = alpha_beta_ai_v2.AlphaBetaAIV2
@@ -90,6 +92,7 @@ def test_eat_J0():
 def play_by_ai(chinese_chess):
     pace_num = 0
     while not chinese_chess.end():
+        start = time.time()
         chinese_chess.clear_paces()
         r_ai = ai_creator(debug=True)
         r_choice = r_ai.next_pace(chinese_chess, depth=7)
@@ -102,7 +105,9 @@ def play_by_ai(chinese_chess):
             break
         chinese_chess.play(b_choice.pace)
         pace_num += 1
-        print("pace={}, red={}, black={}, \nmap={}".format(pace_num, r_choice, b_choice, chinese_chess))
+        delta = time.time() - start
+        print(
+            "delta={}s, pace={}, red={}, black={}, \nmap={}".format(delta, pace_num, r_choice, b_choice, chinese_chess))
         pass
     print("the end")
     winner = chinese_chess.winner()
@@ -210,8 +215,8 @@ def test_p_pos():
 
 
 if __name__ == '__main__':
-    test_p_pos()
-    test_next_all_nodes()
-    test01()
-    test02()
+    # test_p_pos()
+    # test_next_all_nodes()
+    # test01()
+    # test02()
     test03()

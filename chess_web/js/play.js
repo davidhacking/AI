@@ -191,39 +191,66 @@ play.clickPoint = function (x, y) {
 }
 
 //Ai自动走棋
-play.AIPlay = function () {
-    //return
-    play.my = -1;
-    var pace = AI.init(play.pace.join(""))
-    if (!pace) {
-        play.showWin(1);
-        return;
-    }
-    play.pace.push(pace.join(""));
-    var key = play.map[pace[1]][pace[0]]
-    play.nowManKey = key;
+// play.AIPlay = function () {
+//     //return
+//     play.my = -1;
+//     var pace = AI.init(play.pace.join(""))
+//     if (!pace) {
+//         play.showWin(1);
+//         return;
+//     }
+//     play.pace.push(pace.join(""));
+//     var key = play.map[pace[1]][pace[0]]
+//     play.nowManKey = key;
+//
+//     var key = play.map[pace[3]][pace[2]];
+//     if (key) {
+//         play.AIclickMan(key, pace[2], pace[3]);
+//     } else {
+//         play.AIclickPoint(pace[2], pace[3]);
+//     }
+//     com.get("clickAudio").play();
+//     console.log("cur pace: ", play.pace)
+// }
 
-    var key = play.map[pace[3]][pace[2]];
-    if (key) {
-        play.AIclickMan(key, pace[2], pace[3]);
-    } else {
-        play.AIclickPoint(pace[2], pace[3]);
+//Ai自动走棋
+play.AIPlay = function () {
+    play.my = -1;
+    var lastPace = play.pace[play.pace.length-1]
+    var callbackFunc = function (rsp) {
+        rsp = JSON.parse(rsp)
+        if (rsp.code !== 0) {
+            play.showWin(rsp.msg);
+            return;
+        }
+        pace = [rsp.data.x1, rsp.data.y1, rsp.data.x2, rsp.data.y2]
+        play.pace.push(pace.join(""));
+        var key = play.map[pace[1]][pace[0]]
+        play.nowManKey = key;
+
+        var key = play.map[pace[3]][pace[2]];
+        if (key) {
+            play.AIclickMan(key, pace[2], pace[3]);
+        } else {
+            play.AIclickPoint(pace[2], pace[3]);
+        }
+        com.get("clickAudio").play();
+        console.log("cur pace: ", play.pace)
     }
-    report_black_pace(pace[0], pace[1], pace[2], pace[3])
-    com.get("clickAudio").play();
-    console.log("cur pace: ", play.pace)
+    next_ai_play(lastPace[0], lastPace[1], lastPace[2], lastPace[3], callbackFunc)
 }
 
-var report_black_pace = function (x1, y1, x2, y2) {
+var next_ai_play = function (x1, y1, x2, y2, callbackFunc) {
     var data = null;
     var xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
             console.log(this.responseText);
+            callbackFunc(this.responseText)
         }
     });
-    xhr.open("GET", "http://127.0.0.1:1937/report_black_pace?x1=" + x1 + "&y1=" + y1 + "&x2=" + x2 + "&y2=" + y2);
+    xhr.open("GET", "http://127.0.0.1:1937/next_ai_play?x1=" + x1 + "&y1=" + y1 + "&x2=" + x2 + "&y2=" + y2);
     xhr.send(data);
 }
 
