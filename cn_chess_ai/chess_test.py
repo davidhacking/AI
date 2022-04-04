@@ -1,6 +1,6 @@
 import time
 
-import chess_ai.chess as chess
+import cn_chess_ai.chess as chess
 from ai import alpha_beta_ai_v2
 from ai import ai
 
