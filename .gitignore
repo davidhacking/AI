@@ -6,3 +6,4 @@ vae_imgs
 .DS_Store
 profile.prof
 profile.svg
+*.pyc
