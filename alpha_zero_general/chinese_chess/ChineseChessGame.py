@@ -80,7 +80,7 @@ class ChineseChessBoard():
         self.board[self.height*self.width+1] = value
 
     def get_winner(self, color):
-        print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
+        # print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
         if 'k' not in self.name2point:
             return Winner.black
         elif 'K' not in self.name2point:
@@ -153,8 +153,12 @@ class ChineseChessBoard():
         return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
 
     mov_dir = {
-        'k': [(0, -1), (1, 0), (0, 1), (-1, 0)],
-        'K': [(0, -1), (1, 0), (0, 1), (-1, 0)],
+        'k': [(0, -1), (1, 0), (0, 1), (-1, 0), 
+              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
+              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
+        'K': [(0, -1), (1, 0), (0, 1), (-1, 0), 
+              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
+              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
         'a': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
         'A': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
         'b': [(-2, -2), (2, -2), (2, 2), (-2, 2)],
@@ -200,9 +204,9 @@ class ChineseChessBoard():
         "P3": (244, 247, action_func),
         "P4": (248, 251, action_func),
         "P5": (252, 255, action_func),
-        "k": (256, 259, action_func),
-        "K": (260, 263, action_func),
-        ".": (264, -1, None)
+        "k": (256, 269, action_func),
+        "K": (270, 283, action_func),
+        ".": (284, -1, None)
     }
     num_to_name = {v[0]: k for k, v in action_dict.items()}
     action_size = max([v[1] for _, v in action_dict.items()]) + 1
@@ -367,7 +371,7 @@ class ChineseChessBoard():
         return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
         
     def takeAction(self, action, color):
-        print(f"takeAction action={action} color={color}")
+        # print(f"takeAction action={action} color={color}")
         assert self.isValidAction(action, color)
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
@@ -417,7 +421,6 @@ class ChineseChessGame():
             nextBoard: board after applying action
             nextPlayer: player who plays in the next turn (should be -player)
         """
-        print(f"getNextState player={player} action={action}")
         next_player = -player
         if player == ChineseChessBoard.RED:
             board = ChineseChessBoard(board)

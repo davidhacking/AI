@@ -1,4 +1,5 @@
 import time
+import random
 
 class Chessboard:
     def __init__(self, movs_str):
@@ -247,6 +248,7 @@ class TestChineseChessPlayer():
         self.game = game
         self.player = player
         self.paceIns = PaceIns()
+        self.turn_to_sb = False
 
     def play(self, board):
         # input("按回车继续")
@@ -259,11 +261,25 @@ class TestChineseChessPlayer():
         from xqlightpy.ai_play2 import predict_best_move_and_score
         player = 1 if (self.paceIns.index-1) % 2 == 0 else -1
         originBoard = board
-        board = self.game.getCanonicalForm(board, player)
-        board = self.game.get_fen(board)
+        canonicalBoard = self.game.getCanonicalForm(board, player)
+        board = self.game.get_fen(canonicalBoard)
         board = board + (' w' if player == 1 else ' b')
         move = predict_best_move_and_score(board)
-        print(f"predict move={move}")
+        if move == "-3-3-3-3":
+            self.turn_to_sb = True
+        if self.turn_to_sb:
+            valids = self.game.getValidMoves(originBoard, 1)
+            a = None
+            for i in range(len(valids)):
+                if valids[i] == 1:
+                    a = i
+                    next_board, _ = self.game.getNextState(canonicalBoard, player, a)
+                    winner = self.game.getGameEnded(next_board, player)
+                    if winner != 0:
+                        print(f"getGameEnded winner={winner}")
+                        return a
+            print(f"takeRandom action={a}")
+            return a
         x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
         print(f"play2 {x1},{y1} -> {x2},{y2}")
         a = self.game.move_to_action(originBoard, x1, y1, x2, y2)
