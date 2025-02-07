@@ -289,7 +289,7 @@ class TestChineseChessPlayer():
         self.paceIns = PaceIns()
 
     def play(self, board):
-        input("按回车继续")
+        # input("按回车继续")
         s = self.paceIns.get_pace()
         x1, y1, x2, y2 = int(s[0]), int(s[1]), int(s[2]), int(s[3])
         print(f"play {x1},{y1} -> {x2},{y2}")

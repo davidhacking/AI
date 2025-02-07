@@ -251,17 +251,17 @@ class ChineseChessBoard():
                             continue
                         elif ch == 'p':  # for red pawn
                             if board_flag:
-                                if y < 5 and x_ != x:
+                                if y > 4 and x_ != x:
                                     continue
                             else:
-                                if y > 4 and x_ != x:
+                                if y < 5 and x_ != x:
                                     continue
                         elif ch == 'P':  # for black pawn
                             if board_flag:
-                                if y > 4 and x_ != x:
+                                if y < 5 and x_ != x:
                                     continue
                             else:
-                                if y < 5 and x_ != x:
+                                if y > 4 and x_ != x:
                                     continue
                         elif ch == 'n' or ch == 'N' or ch == 'b' or ch == 'B': # for knight and bishop
                             if self[y+int(d[1]/2), x+int(d[0]/2)] != '.':
@@ -342,8 +342,8 @@ class ChineseChessBoard():
         return _legal_moves
 
     def isValidAction(self, action, color):
-        print(f"_red_legal_actions={self._red_legal_actions}")
-        print(f"_black_legal_actions={self._black_legal_actions}")
+        print(f"_red_legal_actions={sorted(list(self._red_legal_actions))}")
+        print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
         return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
         
     def takeAction(self, action, color):
