@@ -5,7 +5,7 @@ import re
 import time
 from elephantfish.elephantfish import Position, Searcher, initial, parse, render
 
-MY_THINK_TIME = 5
+MY_THINK_TIME = 10
 
 
 def get_best_move_and_score(board, move_str):
