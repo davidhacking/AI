@@ -37,6 +37,26 @@ class ChineseChessBoard():
         self.get_legal_actions_flag = False
         self.get_legal_actions()
     
+    def to_fen(self):
+        fen_parts = []
+        for i in range(self.height):
+            empty_count = 0
+            row_str = ""
+            for j in range(self.width):
+                cell = self[i, j]
+                if cell == '.':
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        row_str += str(empty_count)
+                        empty_count = 0
+                    row_str += cell[0].swapcase()
+            if empty_count > 0:
+                row_str += str(empty_count)
+            fen_parts.append(row_str)
+        fen = '/'.join(fen_parts[::-1])
+        return fen
+
     def __getitem__(self, index):
         i, j = index
         index = i * self.width + j
@@ -521,6 +541,10 @@ class ChineseChessGame():
                 row.append(piece)
             elephantfish_board.append(row)
         return elephantfish_board
+
+    def get_fen(self, board):
+        board = ChineseChessBoard(board)
+        return board.to_fen()
 
     @staticmethod
     def display(board):

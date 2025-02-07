@@ -256,15 +256,14 @@ class TestChineseChessPlayer():
             print(f"play {x1},{y1} -> {x2},{y2}")
             a = self.game.move_to_action(board, x1, y1, x2, y2)
             return a
-        from elephantfish.ai_play import predict_best_move_and_score, move2pos
+        from xqlightpy.ai_play2 import predict_best_move_and_score, move2pos
         from elephantfish.elephantfish import render
         player = 1 if self.paceIns.index % 2 == 0 else -1
         originBoard = board
         board = self.game.getCanonicalForm(board, player)
-        elephantfish_board = self.game.get_elephantfish_board(board)
-        elephantfish_board = convertToBoard(elephantfish_board)
-        print(f"elephantfish_board={elephantfish_board}")
-        move, _ = predict_best_move_and_score(elephantfish_board, player)
+        board = self.game.get_fen(board) + ' w' if player == 1 else ' b'
+        print(f"get_fen board={board}")
+        move, _ = predict_best_move_and_score(board, player)
         if player == -1:
             move = 255 - move[0] - 1, 255 - move[1] - 1
         render_move = render(move[0]) + render(move[1])
