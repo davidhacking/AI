@@ -364,8 +364,6 @@ class ChineseChessBoard():
         return _legal_moves
 
     def isValidAction(self, action, color):
-        print(f"_red_legal_actions={sorted(list(self._red_legal_actions))}")
-        print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
         return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
         
     def takeAction(self, action, color):

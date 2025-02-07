@@ -262,7 +262,6 @@ class TestChineseChessPlayer():
         board = self.game.getCanonicalForm(board, player)
         board = self.game.get_fen(board)
         board = board + (' w' if player == 1 else ' b')
-        print(f"get_fen player={player} board={board}")
         move = predict_best_move_and_score(board)
         print(f"predict move={move}")
         x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
