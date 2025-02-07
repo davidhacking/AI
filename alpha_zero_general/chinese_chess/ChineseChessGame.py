@@ -54,7 +54,7 @@ class ChineseChessBoard():
             if empty_count > 0:
                 row_str += str(empty_count)
             fen_parts.append(row_str)
-        fen = '/'.join(fen_parts[::-1])
+        fen = '/'.join(fen_parts)
         return fen
 
     def __getitem__(self, index):

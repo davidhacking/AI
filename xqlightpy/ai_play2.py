@@ -1,16 +1,28 @@
 # -*- coding: utf-8 -*-
 
-from xqlightpy.position import Position
+from xqlightpy.position import Position, SRC, DST
 from xqlightpy.search import Search
 from xqlightpy.cchess import move2Iccs,Iccs2move
 import numpy as np
+
+def move2pos(move):
+    sqSrc = SRC(move)
+    sqDst = DST(move)
+    # print(f"sqSrc={sqSrc}, sqDst={sqDst}")
+    # 将字节转换为具体的坐标值
+    x1 = sqSrc % 16 - 3
+    y1 = sqSrc // 16 - 3
+    x2 = sqDst % 16 - 3
+    y2 = sqDst // 16 - 3
+    # print(f"x1={x1}, y1={y1}, x2={x2}, y2={y2}")
+    return str(x1) + str(y1) + str(x2) + str(y2)
 
 def predict_best_move_and_score(fen):
     pos = Position()
     pos.fromFen(fen)
     searcher = Search(pos, 16)
     mov = searcher.searchMain(64, 5000)
-    return mov
+    return move2pos(mov)
 
 # 示例用法
 if __name__ == "__main__":
