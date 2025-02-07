@@ -2,7 +2,7 @@ import numpy as np
 from enum import Enum
 
 Winner = Enum("Winner", "red black draw")
-MaximumRoundsWithoutPieceCapture = 60
+MaximumTurnsWithoutPieceCapture = 60
 
 class ChineseChessBoard():
     RED = 1
@@ -60,6 +60,7 @@ class ChineseChessBoard():
         self.board[self.height*self.width+1] = value
 
     def get_winner(self, color):
+        print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
         if 'k' not in self.name2point:
             return Winner.black
         elif 'K' not in self.name2point:
@@ -83,7 +84,8 @@ class ChineseChessBoard():
                     return Winner.red
                 else:
                     return Winner.black
-        if self.get_turn_num() > MaximumRoundsWithoutPieceCapture:
+        t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
+        if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
             return Winner.black
     def print_board(self):
@@ -359,8 +361,7 @@ class ChineseChessBoard():
         self[y2, x2] = name
         if old_piece != '.':
             self.set_last_piece_capture_turn_num(self.get_turn_num())
-        if color == ChineseChessBoard.BLACK:
-            self.inc_turn_num()
+        self.inc_turn_num()
 
 class ChineseChessGame():
     """
@@ -509,6 +510,18 @@ class ChineseChessGame():
         board == board[:-2]
         return ''.join([''.join(row) for row in board])
     
+    def get_elephantfish_board(self, board):
+        board = ChineseChessBoard(board)
+        elephantfish_board = []
+        for i in range(board.height):
+            row = []
+            for j in range(board.width):
+                piece = str(board[i, j])[0]
+                piece = piece.swapcase()
+                row.append(piece)
+            elephantfish_board.append(row)
+        return elephantfish_board
+
     @staticmethod
     def display(board):
         board = ChineseChessBoard(board)

@@ -3,7 +3,7 @@
 from __future__ import print_function
 import re
 import time
-from elephantfish import Position, Searcher, initial, parse, render
+from elephantfish.elephantfish import Position, Searcher, initial, parse, render
 
 MY_THINK_TIME = 5
 

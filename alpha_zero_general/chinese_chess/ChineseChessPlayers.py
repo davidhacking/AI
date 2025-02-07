@@ -276,11 +276,30 @@ class PaceIns:
     def get_pace(self):
         if self.index < len(self._paces):
             pace = self._paces[self.index]
-            self.index += 1
             print(f"get_pace {self.index} / {len(self._paces)}")
+            self.index += 1
             return pace
         else:
+            self.index += 1
             return None
+
+
+def convertToBoard(map):
+    result = ""
+    for _ in range(3):
+        result += '               \n'
+
+    for row in map:
+        line = '   '
+        for cell in row:
+            line += cell
+        line += '   \n'
+        result += line
+
+    for _ in range(3):
+        result += '               \n'
+
+    return result
 
 class TestChineseChessPlayer():
     def __init__(self, game, player=1):
@@ -291,11 +310,27 @@ class TestChineseChessPlayer():
     def play(self, board):
         # input("按回车继续")
         s = self.paceIns.get_pace()
-        x1, y1, x2, y2 = int(s[0]), int(s[1]), int(s[2]), int(s[3])
-        print(f"play {x1},{y1} -> {x2},{y2}")
-        a = self.game.move_to_action(board, x1, y1, x2, y2)
+        if s is not None:
+            x1, y1, x2, y2 = int(s[0]), int(s[1]), int(s[2]), int(s[3])
+            print(f"play {x1},{y1} -> {x2},{y2}")
+            a = self.game.move_to_action(board, x1, y1, x2, y2)
+            return a
+        from elephantfish.ai_play import predict_best_move_and_score, move2pos
+        from elephantfish.elephantfish import render
+        player = 1 if self.paceIns.index % 2 == 0 else -1
+        originBoard = board
+        board = self.game.getCanonicalForm(board, player)
+        elephantfish_board = self.game.get_elephantfish_board(board)
+        elephantfish_board = convertToBoard(elephantfish_board)
+        move, _ = predict_best_move_and_score(elephantfish_board, player)
+        if player == -1:
+            move = 255 - move[0] - 1, 255 - move[1] - 1
+        render_move = render(move[0]) + render(move[1])
+        move = move2pos(render_move)
+        x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
+        print(f"play2 {x1},{y1} -> {x2},{y2}")
+        a = self.game.move_to_action(originBoard, x1, y1, x2, y2)
         return a
-
 
 class HumanChineseChessPlayer():
     def __init__(self, game):
