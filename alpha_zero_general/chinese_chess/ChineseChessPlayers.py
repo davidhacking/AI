@@ -58,8 +58,8 @@ class Chessboard:
         moves = self.moves
         self.moves = []
         is_red = True
-        for m in moves:
-            print(f"before convert {m}")
+        for i, m in enumerate(moves):
+            print(f"{i} before convert {m}")
             m = self.convert_move(m, is_red)
             print(f"after convert {m}")
             # input("输入继续。。")
@@ -108,6 +108,7 @@ class Chessboard:
         piece_char = None
         piece_x = None
         piece_y = None
+        direction = move[2]  # 移动方向（进、退、平）
         if move[0] == '前':
             piece_char = move[1]
         elif move[0] == '后':
@@ -138,12 +139,61 @@ class Chessboard:
         else:
             assert move[1] in self.index_dict
             point_x = self.index_dict[move[1]]
-            piece_x, piece_y = [item for item in pieces if item[0] == point_x][0]
+            points = [item for item in pieces if item[0] == point_x]
+            if len(points) == 1:
+                piece_x, piece_y = points[0]
+            else:
+                if piece_char == 'a' or piece_char == 'b':
+                    if direction == '进':
+                        if points[0][0] > points[1][0]:
+                            piece_x, piece_y = points[0]
+                        else:
+                            piece_x, piece_y = points[1]
+                    elif direction == '退':
+                        if points[0][0] < points[1][0]:
+                            piece_x, piece_y = points[0]
+                        else:
+                            piece_x, piece_y = points[1]
+                if piece_char == 'A' or piece_char == 'B':
+                    if direction == '进':
+                        if points[0][0] < points[1][0]:
+                            piece_x, piece_y = points[0]
+                        else:
+                            piece_x, piece_y = points[1]
+                    elif direction == '退':
+                        if points[0][0] > points[1][0]:
+                            piece_x, piece_y = points[0]
+                        else:
+                            piece_x, piece_y = points[1]
+                
+                if piece_char == 'p':
+                    points = sorted(points, key=lambda x: x[0])
+                    if move[0] == "一":
+                        piece_x, piece_y = points[0]
+                    elif move[0] == "二":
+                        piece_x, piece_y = points[1]
+                    elif move[0] == "三":
+                        piece_x, piece_y = points[2]
+                    elif move[0] == "四":
+                        piece_x, piece_y = points[3]
+                    elif move[0] == "五":
+                        piece_x, piece_y = points[4]
+                if piece_char == 'P':
+                    points = sorted(points, key=lambda x: -x[0])
+                    if move[0] == "一":
+                        piece_x, piece_y = points[0]
+                    elif move[0] == "二":
+                        piece_x, piece_y = points[1]
+                    elif move[0] == "三":
+                        piece_x, piece_y = points[2]
+                    elif move[0] == "四":
+                        piece_x, piece_y = points[3]
+                    elif move[0] == "五":
+                        piece_x, piece_y = points[4]
         assert piece_char is not None
         assert piece_x is not None
         assert piece_y is not None
 
-        direction = move[2]  # 移动方向（进、退、平）
         end_x = piece_x
         end_y = piece_y
         action_delta = None
@@ -157,6 +207,12 @@ class Chessboard:
                     continue
                 if ty < 0 or ty >= self.height:
                     continue
+                if (piece_char == 'k' or piece_char == 'a'):
+                    if ty < 7:
+                        continue
+                if (piece_char == 'K' or piece_char == 'A'):
+                    if ty > 2:
+                        continue
                 if end_x == tx:
                     if is_red:
                         if direction == '进' and ty - piece_y > 0:
@@ -184,29 +240,46 @@ class Chessboard:
 class PaceIns:
     _instance = None
     _paces = Chessboard("""
- 1. 马八进七 马８进７
- 2. 兵七进一 炮２平３
- 3. 相七进五 马２进１
- 4. 炮八进五 象７进５
- 5. 兵三进一 车１进１
- 6. 炮二平三 车９进１
- 7. 马二进一 卒５进１
- 8. 车一平二 马７进５
- 9. 马七进六 车１平２
-10. 炮八平五 象３进５
-11. 马六进五 车２进５
-12. 马五进七 炮８平３
-13. 车二进五 炮３退１
-14. 车二平五 车９进１
-15. 炮三进四 炮３平５
-16. 车五进二 车９退２
-17. 车五平九 车２平５
-18. 仕六进五 车９平７
-19. 炮三平九 车５平２
-20. 前车平五 卒３进１
-21. 车九平六 车２退６
-22. 炮九平五 卒３进１
-23. 车六进八 
+ 1. 兵七进一 象７进５
+ 2. 马八进七 马８进７
+ 3. 马二进三 卒７进１
+ 4. 相三进五 马２进１
+ 5. 兵九进一 车１进１
+ 6. 仕四进五 卒３进１
+ 7. 兵七进一 车１平３
+ 8. 兵七进一 车３进２
+ 9. 马七进八 炮２进５
+10. 马八进七 马１进３
+11. 仕五进六 马３进４
+12. 车九进三 炮８进４
+13. 车一平四 卒７进１
+14. 车九退一 卒７进１
+15. 车九平八 卒７进１
+16. 炮二退一 卒７进１
+17. 炮二进一 马７进６
+18. 车四进四 车９平７
+19. 车四平三 车７进５
+20. 相五进三 马６进５
+21. 相七进五 马５进７
+22. 仕六进五 马４进６
+23. 炮二平一 卒７进１
+24. 仕五进四 卒７平６
+25. 帅五进一 马７退９
+26. 炮一进四 马９进８
+27. 帅五平六 马８退６
+28. 仕六退五 前马进８
+29. 车八进三 马６退５
+30. 炮一平九 士６进５
+31. 车八进一 炮８退３
+32. 车八平五 炮８平１
+33. 车五平九 马５进４
+34. 兵九进一 马８退９
+35. 车九平六 马４退６
+36. 仕五退四 马９进７
+37. 仕四进五 马７退５
+38. 帅六退一 马５退４
+39. 兵九平八 马４进３
+40. 兵八进一 马３退４
 """).moves
     
     def __new__(cls):
