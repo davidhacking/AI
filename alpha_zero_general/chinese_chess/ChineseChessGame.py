@@ -34,6 +34,7 @@ class ChineseChessBoard():
                 piece = self[i, j]
                 if piece != '.':
                     self.name2point[piece] = (j, i)
+        self.print_board()
         self.get_legal_actions_flag = False
         self.get_legal_actions()
     
@@ -108,6 +109,7 @@ class ChineseChessBoard():
             # 和棋黑胜
             print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
             return Winner.black
+    
     def print_board(self):
         for i in range(self.height):
             row_str = f"{i:2d} "
@@ -147,9 +149,19 @@ class ChineseChessBoard():
             return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
         self.get_legal_actions_flag = True
         self._red_legal_moves = set(self._init_legal_moves(ChineseChessBoard.RED))
-        self._red_legal_actions = set([self.move_to_action(*move) for move in self._red_legal_moves])
+        red_legal_actions = []
+        for move in self._red_legal_moves:
+            a = self.move_to_action(*move)
+            print(f"red move={move}, action={a}")
+            red_legal_actions.append(a)
+        self._red_legal_actions = set(red_legal_actions)
         self._black_legal_moves = set(self._init_legal_moves(ChineseChessBoard.BLACK))
-        self._black_legal_actions = set([self.move_to_action(*move) for move in self._black_legal_moves])
+        black_legal_actions = []
+        for move in self._black_legal_moves:
+            a = self.move_to_action(*move)
+            print(f"black move={move}, action={a}")
+            black_legal_actions.append(a)
+        self._black_legal_actions = set(black_legal_actions)
         return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
 
     mov_dir = {
@@ -174,39 +186,39 @@ class ChineseChessBoard():
     r_action_func = lambda name, x1, y1, x2, y2: ChineseChessBoard.mov_dir[name[0]].index((x2 - x1, y2 - y1))
     
     action_dict = {
-        "r1": (0, 18, stright_action_func),
-        "r2": (19, 37, stright_action_func),
-        "R1": (38, 56, stright_action_func),
-        "R2": (57, 75, stright_action_func),
-        "c1": (76, 94, stright_action_func),
-        "c2": (95, 113, stright_action_func),
-        "C1": (114, 132, stright_action_func),
-        "C2": (133, 151, stright_action_func),
-        "n1": (152, 159, action_func),
-        "n2": (160, 167, action_func),
-        "N1": (168, 175, action_func),
-        "N2": (176, 183, action_func),
-        "b1": (184, 187, action_func),
-        "b2": (188, 191, action_func),
-        "B1": (192, 195, action_func),
-        "B2": (196, 199, action_func),
-        "a1": (200, 203, action_func),
-        "a2": (204, 207, action_func),
-        "A1": (208, 211, action_func),
-        "A2": (212, 215, action_func),
-        "p1": (216, 219, action_func),
-        "p2": (220, 223, action_func),
-        "p3": (224, 227, action_func),
-        "p4": (228, 231, action_func),
-        "p5": (232, 235, action_func),
-        "P1": (236, 239, action_func),
-        "P2": (240, 243, action_func),
-        "P3": (244, 247, action_func),
-        "P4": (248, 251, action_func),
-        "P5": (252, 255, action_func),
-        "k": (256, 269, action_func),
-        "K": (270, 283, action_func),
-        ".": (284, -1, None)
+        "r1": (1, 19, stright_action_func),
+        "r2": (20, 38, stright_action_func),
+        "R1": (39, 57, stright_action_func),
+        "R2": (58, 76, stright_action_func),
+        "c1": (77, 95, stright_action_func),
+        "c2": (96, 114, stright_action_func),
+        "C1": (115, 133, stright_action_func),
+        "C2": (134, 152, stright_action_func),
+        "n1": (153, 160, action_func),
+        "n2": (161, 168, action_func),
+        "N1": (169, 176, action_func),
+        "N2": (177, 184, action_func),
+        "b1": (185, 188, action_func),
+        "b2": (189, 192, action_func),
+        "B1": (193, 196, action_func),
+        "B2": (197, 200, action_func),
+        "a1": (201, 204, action_func),
+        "a2": (205, 208, action_func),
+        "A1": (209, 212, action_func),
+        "A2": (213, 216, action_func),
+        "p1": (217, 220, action_func),
+        "p2": (221, 224, action_func),
+        "p3": (225, 228, action_func),
+        "p4": (229, 232, action_func),
+        "p5": (233, 236, action_func),
+        "P1": (237, 240, action_func),
+        "P2": (241, 244, action_func),
+        "P3": (245, 248, action_func),
+        "P4": (249, 252, action_func),
+        "P5": (253, 256, action_func),
+        "k": (257, 270, action_func),
+        "K": (271, 284, action_func),
+        ".": (285, -1, None)
     }
     num_to_name = {v[0]: k for k, v in action_dict.items()}
     action_size = max([v[1] for _, v in action_dict.items()]) + 1
@@ -371,7 +383,8 @@ class ChineseChessBoard():
         return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
         
     def takeAction(self, action, color):
-        # print(f"takeAction action={action} color={color}")
+        print(f"takeAction action={action} color={color}")
+        assert action >= 0
         assert self.isValidAction(action, color)
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
@@ -514,7 +527,7 @@ class ChineseChessGame():
         """
         # For Chinese Chess, symmetry might be more complex due to the board's layout
         # For simplicity, we return the original board and pi
-        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH,)
+        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = board[:-2]
         board = board.reshape(ChineseChessBoard.BOARD_HEIGHT, ChineseChessBoard.BOARD_WIDTH)
         return [(board, pi)]
@@ -528,8 +541,8 @@ class ChineseChessGame():
             boardString: a quick conversion of board to a string format.
                          Required by MCTS for hashing.
         """
-        board == board[:-2]
-        return ''.join([''.join(row) for row in board])
+        board = ChineseChessBoard(board)
+        return board.to_fen()
     
     def get_elephantfish_board(self, board):
         board = ChineseChessBoard(board)

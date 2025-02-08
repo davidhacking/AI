@@ -13,6 +13,7 @@ import torch
 import torch.optim as optim
 
 from .ChineseChessNNet import ChineseChessNNet as ccnet
+from ..ChineseChessGame import ChineseChessBoard
 
 args = dotdict({
     'lr': 0.001,
@@ -79,6 +80,8 @@ class NNetWrapper(NeuralNet):
         """
         board: np array with board
         """
+        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
+        board = board[:-2]
         # timing
         start = time.time()
 

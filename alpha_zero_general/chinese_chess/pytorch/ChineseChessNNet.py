@@ -8,14 +8,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-class ChineseChess(nn.Module):
+class ChineseChessNNet(nn.Module):
     def __init__(self, game, args):
         # game params
         self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
         self.args = args
 
-        super(ChineseChess, self).__init__()
+        super(ChineseChessNNet, self).__init__()
         self.conv1 = nn.Conv2d(1, args.num_channels, 3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(args.num_channels, args.num_channels, 3, stride=1)
