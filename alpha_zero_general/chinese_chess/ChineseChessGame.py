@@ -384,7 +384,7 @@ class ChineseChessBoard():
         
     def takeAction(self, action, color):
         print(f"takeAction action={action} color={color}")
-        assert action >= 0
+        assert action > 0
         assert self.isValidAction(action, color)
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
