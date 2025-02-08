@@ -3,9 +3,9 @@
 from __future__ import print_function
 import re
 import time
-from elephantfish import Position, Searcher, initial, parse, render
+from elephantfish.elephantfish import Position, Searcher, initial, parse, render
 
-MY_THINK_TIME = 5
+MY_THINK_TIME = 10
 
 
 def get_best_move_and_score(board, move_str):

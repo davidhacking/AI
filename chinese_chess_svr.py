@@ -8,7 +8,7 @@ from elephantfish.elephantfish import render
 app = Flask(__name__)
 
 # 定义静态文件夹路径
-UI_FOLDER = '/home/david/MF/github/chinese_chess_ui'
+UI_FOLDER = '/home/david/MF/github/AI/chinese_chess_ui'
 
 # 处理根路径请求，默认返回 index.html
 @app.route('/')
