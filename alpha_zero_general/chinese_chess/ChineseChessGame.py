@@ -289,6 +289,12 @@ class ChineseChessBoard():
                             continue
                         elif ch == 'p':  # for red pawn
                             if board_flag:
+                                if y_ > 6:
+                                    continue
+                            else:
+                                if y_ < 3:
+                                    continue
+                            if board_flag:
                                 if y > 4 and x_ != x:
                                     continue
                             else:
@@ -296,12 +302,32 @@ class ChineseChessBoard():
                                     continue
                         elif ch == 'P':  # for black pawn
                             if board_flag:
+                                if y_ < 3:
+                                    continue
+                            else:
+                                if y_ > 6:
+                                    continue
+                            if board_flag:
                                 if y < 5 and x_ != x:
                                     continue
                             else:
                                 if y > 4 and x_ != x:
                                     continue
                         elif ch == 'n' or ch == 'N' or ch == 'b' or ch == 'B': # for knight and bishop
+                            if ch == 'b':
+                                if board_flag:
+                                    if y_ < 5:
+                                        continue
+                                else:
+                                    if y_ > 4:
+                                        continue
+                            if ch == 'B':
+                                if board_flag:
+                                    if y_ > 4:
+                                        continue
+                                else:
+                                    if y_ < 5:
+                                        continue
                             if self[y+int(d[1]/2), x+int(d[0]/2)] != '.':
                                 continue
                             elif ch == 'b':
@@ -439,15 +465,11 @@ class ChineseChessGame():
         next_player = -player
         if player == ChineseChessBoard.RED:
             board = ChineseChessBoard(board)
-            if self.cnt % 1000 == 0:
-                board.print_board()
             board.takeAction(action+1, player)
             next_board = board.board
             return next_board, next_player
         # 需要调整回getCanonicalForm的棋盘，将action转为p2p，再计算出新的action
         canonicalFormBoard = self.getCanonicalForm(board, player)
-        if self.cnt % 1000 == 0:
-            canonicalFormBoard.print_board()
         canonicalFormBoard = ChineseChessBoard(canonicalFormBoard)
         canonicalFormBoard.takeAction(action+1, -player)
         next_board = self.getCanonicalForm(canonicalFormBoard.board, player)

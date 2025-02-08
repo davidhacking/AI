@@ -77,8 +77,7 @@ class MCTS():
             s = self.game.stringRepresentation(current_state)
             
             # 检查是否终止状态
-            if s not in self.Es:
-                self.Es[s] = self.game.getGameEnded(current_state, 1)
+            self.Es[s] = self.game.getGameEnded(current_state, 1)
             if self.Es[s] != 0:
                 v = -self.Es[s]
                 break
@@ -118,6 +117,9 @@ class MCTS():
                     if u > cur_best:
                         cur_best = u
                         best_act = a
+            if best_act == -1:
+                print(f"best_act=-1")
+                continue
             
             a = best_act
             path.append((s, a))  # 记录路径
