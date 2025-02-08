@@ -1,1 +1,1 @@
-docker run -it --gpus all --shm-size 8G -v `pwd`:/workspace/alpha_zero -p 8888:8888 -p 8097:8097 --name pytorch_notebook pytorch:0.4.1-py3-gpu /bin/bash
+docker run -it --gpus all -v `pwd`:/workspace/alpha_zero pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime /bin/bash
