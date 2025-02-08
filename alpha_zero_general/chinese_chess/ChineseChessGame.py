@@ -80,7 +80,6 @@ class ChineseChessBoard():
         self.board[self.height*self.width+1] = value
 
     def get_winner(self, color):
-        # print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
         if 'k' not in self.name2point:
             return Winner.black
         elif 'K' not in self.name2point:
@@ -107,6 +106,7 @@ class ChineseChessBoard():
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
+            print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
             return Winner.black
     def print_board(self):
         for i in range(self.height):
