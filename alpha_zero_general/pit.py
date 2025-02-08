@@ -34,6 +34,6 @@ mcts2 = MCTS(g, n2, args2)
 n2p = lambda x: np.argmax(mcts2.getActionProb(x, temp=0))
 player2 = n2p  # Player 2 is neural network if it's cpu vs cpu.
 
-arena = Arena.Arena(player1, player2, g, display=OthelloGame.display)
+arena = Arena.Arena(player1, gp, g, display=OthelloGame.display)
 
 print(arena.playGames(2, verbose=True))

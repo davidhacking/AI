@@ -34,7 +34,7 @@ class ChineseChessBoard():
                 piece = self[i, j]
                 if piece != '.':
                     self.name2point[piece] = (j, i)
-        self.print_board()
+        # self.print_board()
         self.get_legal_actions_flag = False
         self.get_legal_actions()
     
@@ -152,14 +152,14 @@ class ChineseChessBoard():
         red_legal_actions = []
         for move in self._red_legal_moves:
             a = self.move_to_action(*move)
-            print(f"red move={move}, action={a}")
+            # print(f"red move={move}, action={a}")
             red_legal_actions.append(a)
         self._red_legal_actions = set(red_legal_actions)
         self._black_legal_moves = set(self._init_legal_moves(ChineseChessBoard.BLACK))
         black_legal_actions = []
         for move in self._black_legal_moves:
             a = self.move_to_action(*move)
-            print(f"black move={move}, action={a}")
+            # print(f"black move={move}, action={a}")
             black_legal_actions.append(a)
         self._black_legal_actions = set(black_legal_actions)
         return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
@@ -383,7 +383,7 @@ class ChineseChessBoard():
         return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
         
     def takeAction(self, action, color):
-        print(f"takeAction action={action} color={color}")
+        # print(f"takeAction action={action} color={color}")
         assert action > 0
         assert self.isValidAction(action, color)
         name = ChineseChessBoard.action_num_to_name[action]
@@ -409,6 +409,7 @@ class ChineseChessGame():
     See othello/OthelloGame.py for an example implementation.
     """
     def __init__(self, board=None):
+        self.cnt = 0
         if board is not None:
             self.board = ChineseChessBoard(board)
         else:
@@ -434,14 +435,19 @@ class ChineseChessGame():
             nextBoard: board after applying action
             nextPlayer: player who plays in the next turn (should be -player)
         """
+        self.cnt += 1
         next_player = -player
         if player == ChineseChessBoard.RED:
             board = ChineseChessBoard(board)
+            if self.cnt % 1000 == 0:
+                board.print_board()
             board.takeAction(action+1, player)
             next_board = board.board
             return next_board, next_player
         # 需要调整回getCanonicalForm的棋盘，将action转为p2p，再计算出新的action
         canonicalFormBoard = self.getCanonicalForm(board, player)
+        if self.cnt % 1000 == 0:
+            canonicalFormBoard.print_board()
         canonicalFormBoard = ChineseChessBoard(canonicalFormBoard)
         canonicalFormBoard.takeAction(action+1, -player)
         next_board = self.getCanonicalForm(canonicalFormBoard.board, player)

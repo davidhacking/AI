@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 from Arena import Arena
-from MCTS import MCTS
+from MCTS2 import MCTS
 
 log = logging.getLogger(__name__)
 
