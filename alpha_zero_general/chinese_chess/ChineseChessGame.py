@@ -238,10 +238,11 @@ class ChineseChessBoard():
         return ChineseChessBoard.action_dict[ch][0] + ChineseChessBoard.r_action_func(ch, x1, y1, x2, y2)
     
     def _is_same_side(self, x, y, color):
-        if color == ChineseChessBoard.RED and self[y, x].islower():
+        if color == ChineseChessBoard.RED and self[y, x][0].islower():
             return True
-        if color == ChineseChessBoard.BLACK and self[y, x].isupper():
+        if color == ChineseChessBoard.BLACK and self[y, x][0].isupper():
             return True
+        return False
     
     def _can_move(self, x, y, color): # basically check the move
         if x < 0 or x > self.width - 1:

@@ -77,7 +77,8 @@ class MCTS():
             s = self.game.stringRepresentation(current_state)
             
             # 检查是否终止状态
-            self.Es[s] = self.game.getGameEnded(current_state, 1)
+            if s not in self.Es or self.Es[s] == 0:
+                self.Es[s] = self.game.getGameEnded(current_state, 1)
             if self.Es[s] != 0:
                 v = -self.Es[s]
                 break
