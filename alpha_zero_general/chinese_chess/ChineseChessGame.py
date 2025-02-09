@@ -410,6 +410,7 @@ class ChineseChessBoard():
                             _legal_moves.append((x, y, x, d_))
                         if self._can_move(x, u_, color):
                             _legal_moves.append((x, y, x, u_))
+        _legal_moves = [move for move in _legal_moves if not (move[0] == move[2] and move[1] == move[3])]
         return _legal_moves
 
     def isValidAction(self, action, color):
@@ -420,7 +421,7 @@ class ChineseChessBoard():
         if not b:
             print(f"isValidAction action={action} color={color}")
             print(f"_red_legal_actions={self._red_legal_actions}")
-            print(f"_red_legal_actions={self._black_legal_actions}")
+            print(f"_black_legal_actions={self._black_legal_actions}")
             self.print_board()
         return b
         
