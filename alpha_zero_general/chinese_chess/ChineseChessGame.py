@@ -82,12 +82,16 @@ class ChineseChessBoard():
 
     def get_winner(self, color):
         if 'k' not in self.name2point:
+            print(f"no red king black win")
             return Winner.black
         elif 'K' not in self.name2point:
+            print(f"no black king red win")
             return Winner.red
         if color == ChineseChessBoard.RED and len(self._red_legal_actions) <= 0:
+            print(f"red no legal_actions black win")
             return Winner.black
         if color == ChineseChessBoard.BLACK and len(self._black_legal_actions) <= 0:
+            print(f"black no legal_actions red win")
             return Winner.red
         kx, ky = self.name2point['k']
         Kx, Ky = self.name2point['K']
@@ -101,14 +105,17 @@ class ChineseChessBoard():
                 i += 1
             if not has_block:
                 if color == ChineseChessBoard.RED:
+                    print(f"king confrontation red win")
                     return Winner.red
                 else:
+                    print(f"king confrontation black win")
                     return Winner.black
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
-            print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
+            print(f"draw return black win")
             return Winner.black
+        return None
     
     def print_board(self):
         for i in range(self.height):
@@ -406,7 +413,16 @@ class ChineseChessBoard():
         return _legal_moves
 
     def isValidAction(self, action, color):
-        return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
+        if color == ChineseChessBoard.RED:
+            b = action in self._red_legal_actions
+        else:
+            b = action in self._black_legal_actions
+        if not b:
+            print(f"isValidAction action={action} color={color}")
+            print(f"_red_legal_actions={self._red_legal_actions}")
+            print(f"_red_legal_actions={self._black_legal_actions}")
+            self.print_board()
+        return b
         
     def takeAction(self, action, color):
         # print(f"takeAction action={action} color={color}")
