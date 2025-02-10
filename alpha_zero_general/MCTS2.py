@@ -95,7 +95,7 @@ class MCTS():
                 else:
                     # 处理所有有效动作被掩码的情况
                     log.error("All valid moves were masked, doing a workaround.")
-                    self.Ps[s] = valids.astype(np.float32)
+                    self.Ps[s] = self.Ps[s] + valids
                     self.Ps[s] /= np.sum(self.Ps[s])
                 self.Vs[s] = valids
                 self.Ns[s] = 0

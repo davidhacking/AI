@@ -57,6 +57,28 @@ class ChineseChessBoard():
             fen_parts.append(row_str)
         fen = '/'.join(fen_parts)
         return fen
+    
+    def to_fen2(self):
+        fen_parts = []
+        for i in range(self.height):
+            empty_count = 0
+            row_str = ""
+            for j in range(self.width):
+                cell = self[i, j]
+                if cell == '.':
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        row_str += str(empty_count)
+                        empty_count = 0
+                    row_str += cell[0].swapcase()
+                    if len(cell) > 1:
+                        row_str += "(" + cell[1] + ")"
+            if empty_count > 0:
+                row_str += str(empty_count)
+            fen_parts.append(row_str)
+        fen = '/'.join(fen_parts)
+        return fen
 
     def __getitem__(self, index):
         i, j = index
@@ -338,14 +360,14 @@ class ChineseChessBoard():
                                         continue
                             if self[y+int(d[1]/2), x+int(d[0]/2)] != '.':
                                 continue
-                            elif ch == 'b':
+                            if ch == 'b':
                                 if board_flag:
                                     if y < 5:
                                         continue
                                 else:
                                     if y > 4:
                                         continue
-                            elif ch == 'B':
+                            if ch == 'B':
                                 if board_flag:
                                     if y > 4:
                                         continue
@@ -421,8 +443,8 @@ class ChineseChessBoard():
             b = action in self._black_legal_actions
         if not b:
             print(f"isValidAction action={action} color={color}")
-            print(f"_red_legal_actions={self._red_legal_actions}")
-            print(f"_black_legal_actions={self._black_legal_actions}")
+            print(f"_red_legal_actions={sorted(list(self._red_legal_actions))}")
+            print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
             self.print_board()
         return b
         
@@ -588,7 +610,7 @@ class ChineseChessGame():
                          Required by MCTS for hashing.
         """
         board = ChineseChessBoard(board)
-        return board.to_fen()
+        return board.to_fen2()
     
     def get_elephantfish_board(self, board):
         board = ChineseChessBoard(board)
@@ -617,9 +639,19 @@ class ChineseChessGame():
         return board.move_to_action(x1, y1, x2, y2)-1
     
 if __name__ == "__main__":
-    game = ChineseChessGame()
-    board = game.getInitBoard()
-    curPlayer = 1
-    canonicalBoard = game.getCanonicalForm(board, curPlayer)
-    game.display(canonicalBoard)
-    valids = game.getValidMoves(canonicalBoard, curPlayer)
+    board = [
+        ['.', 'N1', 'B1', 'K', '.', 'A2', '.', '.', 'R2'],
+        ['.', '.', '.', '.', 'A1', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', 'B2', '.', 'N2', '.', '.'],
+        ['.', '.', '.', '.', '.', 'r2', '.', '.', '.'],
+        ['.', 'R1', 'p2', '.', '.', '.', '.', 'c2', 'P5'],
+        ['.', '.', '.', '.', '.', 'C2', 'b2', '.', '.'],
+        ['P1', '.', '.', '.', '.', '.', 'n2', '.', 'p5'],
+        ['c1', '.', '.', '.', 'b1', '.', '.', '.', '.'],
+        ['.', '.', '.', 'n1', 'a1', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', 'k', 'a2', '.', '.', '.']
+    ]
+    board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
+    board.print_board()
+    print(board.to_fen2())
+    print(sorted(list(board.get_legal_actions())))
