@@ -2,7 +2,7 @@ import numpy as np
 from enum import Enum
 
 Winner = Enum("Winner", "red black draw")
-MaximumTurnsWithoutPieceCapture = 60
+MaximumTurnsWithoutPieceCapture = 120
 
 class ChineseChessBoard():
     RED = 1
