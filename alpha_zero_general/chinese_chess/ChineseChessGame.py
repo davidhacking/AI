@@ -1,9 +1,10 @@
 import numpy as np
 from enum import Enum
+import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 120
+MaximumTurnsWithoutPieceCapture = 640
 
 
 class ChineseChessBoard():
@@ -215,16 +216,20 @@ class ChineseChessBoard():
         self.get_legal_actions_flag = True
         self._red_legal_moves = set(self._init_legal_moves(ChineseChessBoard.RED))
         red_legal_actions = []
+        self._kill_K_moves = []
         for move in self._red_legal_moves:
             a = self.move_to_action(*move)
-            # print(f"red move={move}, action={a}")
+            if self[move[3], move[2]] == 'K':
+                self._kill_K_moves.append(move)
             red_legal_actions.append(a)
         self._red_legal_actions = set(red_legal_actions)
         self._black_legal_moves = set(self._init_legal_moves(ChineseChessBoard.BLACK))
         black_legal_actions = []
+        self._kill_k_moves = []
         for move in self._black_legal_moves:
             a = self.move_to_action(*move)
-            # print(f"black move={move}, action={a}")
+            if self[move[3], move[2]] == 'k':
+                self._kill_k_moves.append(move)
             black_legal_actions.append(a)
         self._black_legal_actions = set(black_legal_actions)
         return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
@@ -516,6 +521,27 @@ class ChineseChessGame():
             self.board = ChineseChessBoard(board)
         else:
             self.board = ChineseChessBoard()
+    
+    def getSearchAIMove(self, board, player):
+        originBoard = board
+        canonicalBoard = self.getCanonicalForm(originBoard, player)
+        board = ChineseChessBoard(canonicalBoard)
+        if player == ChineseChessBoard.RED and len(board._kill_K_moves) > 0:
+            print(f"has _kill_K_moves={board._kill_K_moves}")
+            return board._kill_K_moves[0]
+        if player == ChineseChessBoard.BLACK and len(board._kill_k_moves) > 0:
+            print(f"has _kill_k_moves={board._kill_k_moves}")
+            return board._kill_k_moves[0]
+        from chinese_chess.xqlightpy.ai_play2 import predict_best_move_and_score
+        fen_board = self.get_fen(canonicalBoard)
+        fen_board = fen_board + (' w' if player == 1 else ' b')
+        move = predict_best_move_and_score(fen_board)
+        try:
+            x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
+            return x1, y1, x2, y2
+        except Exception as e:
+            moves = board._black_legal_moves if player == ChineseChessBoard.BLACK else board._red_legal_moves
+            return random.choice(moves)
     
     def getInitBoard(self):
         return ChineseChessBoard().board

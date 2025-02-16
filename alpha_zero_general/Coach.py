@@ -4,7 +4,7 @@ import sys
 from collections import deque
 from pickle import Pickler, Unpickler
 from random import shuffle
-
+import random
 import numpy as np
 from tqdm import tqdm
 
@@ -54,8 +54,13 @@ class Coach():
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
-
-            pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
+            if random.random() < self.args.ebsGreedyRate or self.args.currentIteration >= self.args.minmaxIterations:
+                pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
+            else:
+                move = self.game.getSearchAIMove(canonicalBoard, self.curPlayer)
+                action = self.game.move_to_action(canonicalBoard, *move)
+                pi = np.zeros(self.game.getActionSize())
+                pi[action] = 1
             sym = self.game.getSymmetries(canonicalBoard, pi)
             for b, p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])
@@ -78,6 +83,7 @@ class Coach():
         """
 
         for i in range(1, self.args.numIters + 1):
+            self.args.currentIteration = i
             # bookkeeping
             log.info(f'Starting Iter #{i} ...')
             # examples of the iteration
