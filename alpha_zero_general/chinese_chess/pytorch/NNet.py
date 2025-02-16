@@ -13,7 +13,6 @@ import torch
 import torch.optim as optim
 
 from .ChineseChessNNet import CChessModel as ccnet
-from ..ChineseChessGame import ChineseChessBoard
 
 args = dotdict({
     'lr': 0.001,

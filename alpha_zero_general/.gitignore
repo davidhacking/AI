@@ -10,5 +10,7 @@ checkpoints/
 
 # For PyCharm users
 .idea/
+
 chinese_chess_models/
+
 

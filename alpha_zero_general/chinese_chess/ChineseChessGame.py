@@ -2,7 +2,9 @@ import numpy as np
 from enum import Enum
 
 Winner = Enum("Winner", "red black draw")
+
 MaximumTurnsWithoutPieceCapture = 120
+
 
 class ChineseChessBoard():
     RED = 1
@@ -19,6 +21,7 @@ class ChineseChessBoard():
         ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
         ['r1', 'n1', 'b1', 'a1', 'k', 'a2', 'b2', 'n2', 'r2']
     ]
+
     Fen_2_Idx = {
         'p': 0,
         'P': 0,
@@ -36,6 +39,7 @@ class ChineseChessBoard():
         'N': 6
     }
     PIECE_NUM = 14
+
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
     def __init__(self, board=None):
@@ -51,7 +55,6 @@ class ChineseChessBoard():
                 piece = self[i, j]
                 if piece != '.':
                     self.name2point[piece] = (j, i)
-        # self.print_board()
         self.get_legal_actions_flag = False
         self.get_legal_actions()
     
@@ -171,7 +174,7 @@ class ChineseChessBoard():
             print(f"draw return black win")
             return Winner.black
         return None
-    
+
     def print_board(self):
         for i in range(self.height):
             row_str = f"{i:2d} "
