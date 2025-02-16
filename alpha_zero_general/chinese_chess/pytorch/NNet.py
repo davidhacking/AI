@@ -12,7 +12,7 @@ from NeuralNet import NeuralNet
 import torch
 import torch.optim as optim
 
-from .ChineseChessNNet import ChineseChessNNet as ccnet
+from .ChineseChessNNet import CChessModel as ccnet
 from ..ChineseChessGame import ChineseChessBoard
 
 args = dotdict({
@@ -28,7 +28,8 @@ args = dotdict({
 class NNetWrapper(NeuralNet):
     def __init__(self, game):
         self.nnet = ccnet(game, args)
-        self.board_x, self.board_y = game.getBoardSize()
+        self.game = game
+        self.piece_num, self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
 
         if args.cuda:
@@ -80,15 +81,14 @@ class NNetWrapper(NeuralNet):
         """
         board: np array with board
         """
-        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
-        board = board[:-2]
+        board = self.game.convert_predict_board(board)
         # timing
         start = time.time()
 
         # preparing input
         board = torch.FloatTensor(board.astype(np.float64))
         if args.cuda: board = board.contiguous().cuda()
-        board = board.view(1, self.board_x, self.board_y)
+        board = board.view(1, self.piece_num, self.board_x, self.board_y)
         self.nnet.eval()
         with torch.no_grad():
             pi, v = self.nnet(board)

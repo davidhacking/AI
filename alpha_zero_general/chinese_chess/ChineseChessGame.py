@@ -19,6 +19,23 @@ class ChineseChessBoard():
         ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
         ['r1', 'n1', 'b1', 'a1', 'k', 'a2', 'b2', 'n2', 'r2']
     ]
+    Fen_2_Idx = {
+        'p': 0,
+        'P': 0,
+        'c': 1,
+        'C': 1,
+        'r': 2,
+        'R': 2,
+        'k': 3,
+        'K': 3,
+        'b': 4,
+        'B': 4,
+        'a': 5,
+        'A': 5,
+        'n': 6,
+        'N': 6
+    }
+    PIECE_NUM = 14
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
     def __init__(self, board=None):
@@ -58,6 +75,22 @@ class ChineseChessBoard():
         fen = '/'.join(fen_parts)
         return fen
     
+    def fen_to_planes(self):
+        planes = np.zeros(shape=(self.PIECE_NUM, self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.float32)
+        rows = self.to_fen().split('/')
+
+        for i in range(len(rows)):
+            row = rows[i]
+            j = 0
+            for letter in row:
+                if letter.isalpha():
+                    # 0 ~ 7 : upper, 7 ~ 14: lower
+                    planes[self.Fen_2_Idx[letter] + int(letter.islower()) * 7][i][j] = 1
+                    j += 1
+                else:
+                    j += int(letter)
+        return planes
+
     def to_fen2(self):
         fen_parts = []
         for i in range(self.height):
@@ -319,10 +352,10 @@ class ChineseChessBoard():
                             continue
                         elif ch == 'p':  # for red pawn
                             if board_flag:
-                                if y_ > 6:
+                                if y_ > 6 or y_ > y:
                                     continue
                             else:
-                                if y_ < 3:
+                                if y_ < 3 or y_ < y:
                                     continue
                             if board_flag:
                                 if y > 4 and x_ != x:
@@ -332,10 +365,10 @@ class ChineseChessBoard():
                                     continue
                         elif ch == 'P':  # for black pawn
                             if board_flag:
-                                if y_ < 3:
+                                if y_ < 3 or y_ < y:
                                     continue
                             else:
-                                if y_ > 6:
+                                if y_ > 6 or y_ > y:
                                     continue
                             if board_flag:
                                 if y < 5 and x_ != x:
@@ -485,7 +518,7 @@ class ChineseChessGame():
         return ChineseChessBoard().board
     
     def getBoardSize(self):
-        return (self.board.width, self.board.height)
+        return (ChineseChessBoard.PIECE_NUM, self.board.width, self.board.height)
 
     def getActionSize(self):
         return ChineseChessBoard.action_size
@@ -596,9 +629,8 @@ class ChineseChessGame():
         # For Chinese Chess, symmetry might be more complex due to the board's layout
         # For simplicity, we return the original board and pi
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
-        board = board[:-2]
-        board = board.reshape(ChineseChessBoard.BOARD_HEIGHT, ChineseChessBoard.BOARD_WIDTH)
-        return [(board, pi)]
+        board = ChineseChessBoard(board)
+        return [(board.fen_to_planes(), pi)]
 
     def stringRepresentation(self, board):
         """
@@ -632,6 +664,11 @@ class ChineseChessGame():
     def display(board):
         board = ChineseChessBoard(board)
         board.print_board()
+    
+    @staticmethod
+    def convert_predict_board(board):
+        board = ChineseChessBoard(board)
+        return board.fen_to_planes()
     
     @staticmethod
     def move_to_action(board, x1, y1, x2, y2):
