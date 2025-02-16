@@ -541,7 +541,7 @@ class ChineseChessGame():
             return x1, y1, x2, y2
         except Exception as e:
             moves = board._black_legal_moves if player == ChineseChessBoard.BLACK else board._red_legal_moves
-            return random.choice(moves)
+            return random.choice(list(moves))
     
     def getInitBoard(self):
         return ChineseChessBoard().board
