@@ -25,7 +25,6 @@ class Coach():
         self.nnet = nnet
         self.pnet = self.nnet.__class__(self.game)  # the competitor network
         self.args = args
-        self.mcts = MCTS(self.game, self.nnet, self.args)
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
 
@@ -49,16 +48,15 @@ class Coach():
         board = self.game.getInitBoard()
         self.curPlayer = 1
         episodeStep = 0
-
+        mcts = MCTS(self.game, self.nnet.__class__(self.game), self.args)
         while True:
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
             if random.random() < self.args.ebsGreedyRate or self.args.currentIteration >= self.args.minmaxIterations:
-                pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
+                pi = mcts.getActionProb(canonicalBoard, temp=temp)
             else:
-                move = self.game.getSearchAIMove(canonicalBoard, self.curPlayer)
-                action = self.game.move_to_action(canonicalBoard, *move)
+                action = self.game.getSearchAIMove(canonicalBoard, self.curPlayer)
                 pi = np.zeros(self.game.getActionSize())
                 pi[action] = 1
             sym = self.game.getSymmetries(canonicalBoard, pi)
@@ -72,6 +70,20 @@ class Coach():
 
             if r != 0:
                 return [(x[0], x[2], r * ((-1) ** (x[1] != self.curPlayer))) for x in trainExamples]
+
+    def execute_episode_wrapper(self, _):
+        return self.executeEpisode()
+    
+    def run_parallel_self_play(self):
+        with multiprocessing.Pool(processes=self.args.numProcesses) as pool:
+            func = partial(self.execute_episode_wrapper)
+            tasks = [None] * self.args.numEps
+            results = []
+            with tqdm(total=self.args.numEps, desc="Self Play") as pbar:
+                for result in pool.imap(func, tasks, chunksize=10):
+                    results.append(result)
+                    pbar.update(1)
+            return results
 
     def learn(self):
         """
@@ -90,9 +102,8 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                for _ in tqdm(range(self.args.numEps), desc="Self Play"):
-                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
-                    iterationTrainExamples += self.executeEpisode()
+                episode_results = self.run_parallel_self_play()
+                iterationTrainExamples.extend(episode_results)
 
                 # save the iteration examples to the history 
                 self.trainExamplesHistory.append(iterationTrainExamples)

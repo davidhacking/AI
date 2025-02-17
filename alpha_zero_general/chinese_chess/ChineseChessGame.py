@@ -522,26 +522,29 @@ class ChineseChessGame():
         else:
             self.board = ChineseChessBoard()
     
-    def getSearchAIMove(self, board, player):
+    def getSearchAIAction(self, board, player):
         originBoard = board
         canonicalBoard = self.getCanonicalForm(originBoard, player)
         board = ChineseChessBoard(canonicalBoard)
         if player == ChineseChessBoard.RED and len(board._kill_K_moves) > 0:
             print(f"has _kill_K_moves={board._kill_K_moves}")
-            return board._kill_K_moves[0]
+            m = board._kill_K_moves[0]
+            return self.move_to_action(originBoard, *m)
         if player == ChineseChessBoard.BLACK and len(board._kill_k_moves) > 0:
             print(f"has _kill_k_moves={board._kill_k_moves}")
-            return board._kill_k_moves[0]
+            m = board._kill_k_moves[0]
+            return self.move_to_action(originBoard, *m)
         from chinese_chess.xqlightpy.ai_play2 import predict_best_move_and_score
         fen_board = self.get_fen(canonicalBoard)
         fen_board = fen_board + (' w' if player == 1 else ' b')
         move = predict_best_move_and_score(fen_board)
         try:
             x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
-            return x1, y1, x2, y2
+            return self.move_to_action(originBoard, x1, y1, x2, y2)
         except Exception as e:
             moves = board._black_legal_moves if player == ChineseChessBoard.BLACK else board._red_legal_moves
-            return random.choice(list(moves))
+            m = random.choice(list(moves))
+            return self.move_to_action(originBoard, *m)
     
     def getInitBoard(self):
         return ChineseChessBoard().board

@@ -47,12 +47,14 @@ class Arena():
             if hasattr(player, "startGame"):
                 player.startGame()
 
+        if verbose:
+            self.display(board)
+        
         while self.game.getGameEnded(board, curPlayer) == 0:
             it += 1
             if verbose:
                 assert self.display
                 print("Turn ", str(it), "Player ", str(curPlayer))
-                self.display(board)
             action = players[curPlayer + 1](self.game.getCanonicalForm(board, curPlayer))
 
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
@@ -68,6 +70,8 @@ class Arena():
                 opponent.notify(board, action)
 
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
+            if verbose:
+                self.display(board)
 
         for player in players[0], players[2]:
             if hasattr(player, "endGame"):
