@@ -30,7 +30,7 @@ class NNetWrapper(NeuralNet):
         self.game = game
         self.piece_num, self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
-
+        self.use_cpu = False
         if args.cuda:
             self.nnet.cuda()
 
@@ -86,7 +86,7 @@ class NNetWrapper(NeuralNet):
 
         # preparing input
         board = torch.FloatTensor(board.astype(np.float64))
-        if args.cuda: board = board.contiguous().cuda()
+        if not self.use_cpu and args.cuda: board = board.contiguous().cuda()
         board = board.view(1, self.piece_num, self.board_x, self.board_y)
         self.nnet.eval()
         with torch.no_grad():
@@ -117,6 +117,6 @@ class NNetWrapper(NeuralNet):
         filepath = os.path.join(folder, filename)
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
-        map_location = None if args.cuda else 'cpu'
+        map_location = None if not self.use_cpu and args.cuda else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location)
         self.nnet.load_state_dict(checkpoint['state_dict'])

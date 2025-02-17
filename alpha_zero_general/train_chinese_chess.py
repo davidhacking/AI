@@ -26,7 +26,7 @@ args = dotdict({
     'cpuct': 1,
     'checkpoint': './chinese_chess_models/',
     'load_model': True,
-    'load_folder_file': ('./chinese_chess_models','best.pth.tar'),
+    'load_folder_file': ('./chinese_chess_models','checkpoint_3.pth.tar'),
     'numItersForTrainExamplesHistory': 20,
 })
 

@@ -28,7 +28,10 @@ class Coach():
         self.nnet = nnet
         self.pnet = self.nnet.__class__(self.game)  # the competitor network
         if self.args.numProcesses > 0:
-            self.cpu_nnet = self.nnet.__class__(self.game).to('cpu')
+            self.cpu_nnet = self.nnet.__class__(self.game)
+            self.cpu_nnet.use_cpu = True
+            self.cpu_nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
+            self.cpu_nnet.to('cpu')
             self.cpu_nnet.share_memory()  # 允许子进程共享参数
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
@@ -57,6 +60,7 @@ class Coach():
             nnet = self.cpu_nnet
         else:
             nnet = self.nnet.__class__(self.game)
+            nnet.load_checkpoint(self.args.load_folder_file[0], self.args.load_folder_file[1])
         mcts = MCTS(self.game, nnet, self.args)
         while True:
             episodeStep += 1
