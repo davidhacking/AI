@@ -10,6 +10,8 @@ from tqdm import tqdm
 
 from Arena import Arena
 from MCTS2 import MCTS
+import multiprocessing
+from functools import partial
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ class Coach():
             if random.random() < self.args.ebsGreedyRate or self.args.currentIteration >= self.args.minmaxIterations:
                 pi = mcts.getActionProb(canonicalBoard, temp=temp)
             else:
-                action = self.game.getSearchAIMove(canonicalBoard, self.curPlayer)
+                action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
                 pi = np.zeros(self.game.getActionSize())
                 pi[action] = 1
             sym = self.game.getSymmetries(canonicalBoard, pi)
@@ -75,15 +77,21 @@ class Coach():
         return self.executeEpisode()
     
     def run_parallel_self_play(self):
-        with multiprocessing.Pool(processes=self.args.numProcesses) as pool:
+        ctx = multiprocessing.get_context('spawn')
+        with ctx.Pool(processes=self.args.numProcesses) as pool:
             func = partial(self.execute_episode_wrapper)
             tasks = [None] * self.args.numEps
             results = []
             with tqdm(total=self.args.numEps, desc="Self Play") as pbar:
-                for result in pool.imap(func, tasks, chunksize=10):
+                for result in pool.imap_unordered(func, tasks, chunksize=10):
                     results.append(result)
                     pbar.update(1)
             return results
+    
+    def run_self_play(self):
+        iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
+        for _ in tqdm(range(self.args.numEps), desc="Self Play"):
+            iterationTrainExamples += self.executeEpisode()
 
     def learn(self):
         """
@@ -102,7 +110,7 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                episode_results = self.run_parallel_self_play()
+                episode_results = self.run_self_play()
                 iterationTrainExamples.extend(episode_results)
 
                 # save the iteration examples to the history 
