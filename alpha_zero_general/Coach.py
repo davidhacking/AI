@@ -26,6 +26,9 @@ class Coach():
         self.game = game
         self.nnet = nnet
         self.pnet = self.nnet.__class__(self.game)  # the competitor network
+        if self.agrs.numProcesses > 0:
+            self.cpu_nnet = self.nnet.__class__(self.game).to('cpu')
+            self.cpu_nnet.share_memory()  # 允许子进程共享参数
         self.args = args
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
@@ -50,7 +53,11 @@ class Coach():
         board = self.game.getInitBoard()
         self.curPlayer = 1
         episodeStep = 0
-        mcts = MCTS(self.game, self.nnet.__class__(self.game), self.args)
+        if self.agrs.numProcesses > 0:
+            nnet = self.cpu_nnet
+        else:
+            nnet = self.nnet.__class__(self.game)
+        mcts = MCTS(self.game, nnet, self.args)
         while True:
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
@@ -110,7 +117,7 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                episode_results = self.run_self_play()
+                episode_results = self.run_self_play() if self.agrs.numProcesses <= 0 else self.run_parallel_self_play()
                 iterationTrainExamples.extend(episode_results)
 
                 # save the iteration examples to the history 
