@@ -4,6 +4,7 @@ import time
 
 import numpy as np
 from tqdm import tqdm
+import multiprocessing as mp
 
 sys.path.append('../../')
 from utils import *
@@ -25,12 +26,12 @@ args = dotdict({
 
 
 class NNetWrapper(NeuralNet):
+    _lock = mp.Lock()
     def __init__(self, game):
         self.nnet = ccnet(game, args)
         self.game = game
         self.piece_num, self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
-        self.use_cpu = False
         if args.cuda:
             self.nnet.cuda()
 
@@ -80,20 +81,21 @@ class NNetWrapper(NeuralNet):
         """
         board: np array with board
         """
-        board = self.game.convert_predict_board(board)
-        # timing
-        start = time.time()
+        with self._lock:
+            board = self.game.convert_predict_board(board)
+            # timing
+            start = time.time()
 
-        # preparing input
-        board = torch.FloatTensor(board.astype(np.float64))
-        if not self.use_cpu and args.cuda: board = board.contiguous().cuda()
-        board = board.view(1, self.piece_num, self.board_x, self.board_y)
-        self.nnet.eval()
-        with torch.no_grad():
-            pi, v = self.nnet(board)
+            # preparing input
+            board = torch.FloatTensor(board.astype(np.float64))
+            if args.cuda: board = board.contiguous().cuda()
+            board = board.view(1, self.piece_num, self.board_x, self.board_y)
+            self.nnet.eval()
+            with torch.no_grad():
+                pi, v = self.nnet(board)
 
-        # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
-        return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
+            # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
+            return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
         return -torch.sum(targets * outputs) / targets.size()[0]
@@ -117,6 +119,6 @@ class NNetWrapper(NeuralNet):
         filepath = os.path.join(folder, filename)
         if not os.path.exists(filepath):
             raise ("No model in path {}".format(filepath))
-        map_location = None if not self.use_cpu and args.cuda else 'cpu'
+        map_location = None if args.cuda else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location)
         self.nnet.load_state_dict(checkpoint['state_dict'])

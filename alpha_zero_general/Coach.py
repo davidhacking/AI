@@ -26,13 +26,8 @@ class Coach():
         self.game = game
         self.args = args
         self.nnet = nnet
+        self.currentIteration = 0
         self.pnet = self.nnet.__class__(self.game)  # the competitor network
-        if self.args.numProcesses > 0:
-            self.cpu_nnet = self.nnet.__class__(self.game)
-            self.cpu_nnet.use_cpu = True
-            self.cpu_nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-            self.cpu_nnet.to('cpu')
-            self.cpu_nnet.share_memory()  # 允许子进程共享参数
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
 
@@ -56,17 +51,12 @@ class Coach():
         board = self.game.getInitBoard()
         self.curPlayer = 1
         episodeStep = 0
-        if self.args.numProcesses > 0:
-            nnet = self.cpu_nnet
-        else:
-            nnet = self.nnet.__class__(self.game)
-            nnet.load_checkpoint(self.args.load_folder_file[0], self.args.load_folder_file[1])
-        mcts = MCTS(self.game, nnet, self.args)
+        mcts = MCTS(self.game, self.nnet, self.args)
         while True:
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
-            if random.random() < self.args.ebsGreedyRate or self.args.currentIteration >= self.args.minmaxIterations:
+            if random.random() < self.args.ebsGreedyRate or self.currentIteration >= self.args.minmaxIterations:
                 pi = mcts.getActionProb(canonicalBoard, temp=temp)
             else:
                 action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
@@ -94,8 +84,8 @@ class Coach():
             tasks = [None] * self.args.numEps
             results = []
             with tqdm(total=self.args.numEps, desc="Self Play") as pbar:
-                for result in pool.imap_unordered(func, tasks, chunksize=10):
-                    results.append(result)
+                for result in pool.imap_unordered(func, tasks, chunksize=5):
+                    results.extend(result)
                     pbar.update(1)
             return results
     
@@ -114,7 +104,7 @@ class Coach():
         """
 
         for i in range(1, self.args.numIters + 1):
-            self.args.currentIteration = i
+            self.currentIteration = i
             # bookkeeping
             log.info(f'Starting Iter #{i} ...')
             # examples of the iteration
