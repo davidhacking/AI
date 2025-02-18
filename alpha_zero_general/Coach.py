@@ -56,12 +56,13 @@ class Coach():
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
-            if random.random() < self.args.ebsGreedyRate or self.currentIteration >= self.args.minmaxIterations:
-                pi = mcts.getActionProb(canonicalBoard, temp=temp)
-            else:
+            ebsGreedyRate = self.args.ebsGreedyRate * (0.99 ** self.currentIteration)
+            if random.random() < ebsGreedyRate or self.currentIteration < self.args.minmaxIterations:
                 action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
                 pi = np.zeros(self.game.getActionSize())
                 pi[action] = 1
+            else:
+                pi = mcts.getActionProb(canonicalBoard, temp=temp)                
             sym = self.game.getSymmetries(canonicalBoard, pi)
             for b, p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])

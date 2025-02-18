@@ -4,7 +4,7 @@ import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 640
+MaximumTurnsWithoutPieceCapture = 180
 
 
 class ChineseChessBoard():
