@@ -18,15 +18,17 @@ args = dotdict({
     'tempThreshold': 15,
     'numProcesses': 16,
     'minmaxIterations': 150,        #
-    'ebsGreedyRate': 0.7,
+    'ebsGreedyRate': 0,
     'updateThreshold': 0.55,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 40,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
     'checkpoint': './chinese_chess_models/',
-    'load_model': True,
-    'load_folder_file': ('./chinese_chess_models','checkpoint_4.pth.tar'),
+    'load_model': False,
+    'load_train_examples': False,
+    'load_folder_file': ('./chinese_chess_models','checkpoint_27.pth.tar'),
+    'load_examples_folder_file': ('./chinese_chess_models','checkpoint_27.pth.tar'),
     'numItersForTrainExamplesHistory': 20,
 })
 
@@ -47,7 +49,7 @@ def main():
     log.info('Loading the Coach...')
     c = Coach(g, nnet, args)
 
-    if args.load_model:
+    if args.load_train_examples:
         log.info("Loading 'trainExamples' from file...")
         c.loadTrainExamples()
 

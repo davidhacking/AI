@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 from Arena import Arena
-from MCTS2 import MCTS
+from MCTS import MCTS
 import multiprocessing
 from functools import partial
 
@@ -43,7 +43,7 @@ class Coach():
         uses temp=0.
 
         Returns:
-            trainExamples: a list of examples of the form (canonicalBoard, currPlayer, pi,v)
+            trainExamples: a list of examples of the form (canonicalBoard, pi, currPlayer)
                            pi is the MCTS informed policy vector, v is +1 if
                            the player eventually won the game, else -1.
         """
@@ -57,7 +57,7 @@ class Coach():
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
             ebsGreedyRate = self.args.ebsGreedyRate * (0.99 ** self.currentIteration)
-            if random.random() < ebsGreedyRate or self.currentIteration < self.args.minmaxIterations:
+            if random.random() < ebsGreedyRate:
                 action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
                 pi = np.zeros(self.game.getActionSize())
                 pi[action] = 1
@@ -167,7 +167,7 @@ class Coach():
         f.closed
 
     def loadTrainExamples(self):
-        modelFile = os.path.join(self.args.load_folder_file[0], self.args.load_folder_file[1])
+        modelFile = os.path.join(self.args.load_examples_folder_file[0], self.args.load_examples_folder_file[1])
         examplesFile = modelFile + ".examples"
         if not os.path.isfile(examplesFile):
             log.warning(f'File "{examplesFile}" with trainExamples not found!')

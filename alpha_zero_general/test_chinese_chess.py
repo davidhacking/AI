@@ -1,7 +1,7 @@
 import Arena
 from chinese_chess.ChineseChessGame import ChineseChessGame
 from chinese_chess.pytorch.NNet import NNetWrapper as NNet
-from MCTS2 import MCTS
+from MCTS import MCTS
 from utils import *
 import numpy as np
 

@@ -1,5 +1,5 @@
 import Arena
-from MCTS2 import MCTS
+from MCTS import MCTS
 from othello.OthelloGame import OthelloGame
 from othello.OthelloPlayers import *
 from othello.pytorch.NNet import NNetWrapper as NNet
