@@ -4,12 +4,14 @@ import sys
 from collections import deque
 from pickle import Pickler, Unpickler
 from random import shuffle
-
+import random
 import numpy as np
 from tqdm import tqdm
 
 from Arena import Arena
 from MCTS import MCTS
+import multiprocessing
+from functools import partial
 
 log = logging.getLogger(__name__)
 
@@ -22,10 +24,10 @@ class Coach():
 
     def __init__(self, game, nnet, args):
         self.game = game
-        self.nnet = nnet
-        self.pnet = self.nnet.__class__(self.game)  # the competitor network
         self.args = args
-        self.mcts = MCTS(self.game, self.nnet, self.args)
+        self.nnet = nnet
+        self.currentIteration = 0
+        self.pnet = self.nnet.__class__(self.game)  # the competitor network
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
 
@@ -41,7 +43,7 @@ class Coach():
         uses temp=0.
 
         Returns:
-            trainExamples: a list of examples of the form (canonicalBoard, currPlayer, pi,v)
+            trainExamples: a list of examples of the form (canonicalBoard, pi, currPlayer)
                            pi is the MCTS informed policy vector, v is +1 if
                            the player eventually won the game, else -1.
         """
@@ -49,13 +51,18 @@ class Coach():
         board = self.game.getInitBoard()
         self.curPlayer = 1
         episodeStep = 0
-
+        mcts = MCTS(self.game, self.nnet, self.args)
         while True:
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
-
-            pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
+            ebsGreedyRate = self.args.ebsGreedyRate * (0.99 ** self.currentIteration)
+            if random.random() < ebsGreedyRate:
+                action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
+                pi = np.zeros(self.game.getActionSize())
+                pi[action] = 1
+            else:
+                pi = mcts.getActionProb(canonicalBoard, temp=temp)                
             sym = self.game.getSymmetries(canonicalBoard, pi)
             for b, p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])
@@ -68,6 +75,26 @@ class Coach():
             if r != 0:
                 return [(x[0], x[2], r * ((-1) ** (x[1] != self.curPlayer))) for x in trainExamples]
 
+    def execute_episode_wrapper(self, _):
+        return self.executeEpisode()
+    
+    def run_parallel_self_play(self):
+        ctx = multiprocessing.get_context('spawn')
+        with ctx.Pool(processes=self.args.numProcesses) as pool:
+            func = partial(self.execute_episode_wrapper)
+            tasks = [None] * self.args.numEps
+            results = []
+            with tqdm(total=self.args.numEps, desc="Self Play") as pbar:
+                for result in pool.imap_unordered(func, tasks, chunksize=5):
+                    results.extend(result)
+                    pbar.update(1)
+            return results
+    
+    def run_self_play(self):
+        iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
+        for _ in tqdm(range(self.args.numEps), desc="Self Play"):
+            iterationTrainExamples += self.executeEpisode()
+
     def learn(self):
         """
         Performs numIters iterations with numEps episodes of self-play in each
@@ -78,15 +105,15 @@ class Coach():
         """
 
         for i in range(1, self.args.numIters + 1):
+            self.currentIteration = i
             # bookkeeping
             log.info(f'Starting Iter #{i} ...')
             # examples of the iteration
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                for _ in tqdm(range(self.args.numEps), desc="Self Play"):
-                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
-                    iterationTrainExamples += self.executeEpisode()
+                episode_results = self.run_self_play() if self.args.numProcesses <= 0 else self.run_parallel_self_play()
+                iterationTrainExamples.extend(episode_results)
 
                 # save the iteration examples to the history 
                 self.trainExamplesHistory.append(iterationTrainExamples)
@@ -140,7 +167,7 @@ class Coach():
         f.closed
 
     def loadTrainExamples(self):
-        modelFile = os.path.join(self.args.load_folder_file[0], self.args.load_folder_file[1])
+        modelFile = os.path.join(self.args.load_examples_folder_file[0], self.args.load_examples_folder_file[1])
         examplesFile = modelFile + ".examples"
         if not os.path.isfile(examplesFile):
             log.warning(f'File "{examplesFile}" with trainExamples not found!')

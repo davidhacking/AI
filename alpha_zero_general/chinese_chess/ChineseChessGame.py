@@ -1,8 +1,11 @@
 import numpy as np
 from enum import Enum
+import random
 
 Winner = Enum("Winner", "red black draw")
-MaximumTurnsWithoutPieceCapture = 60
+
+MaximumTurnsWithoutPieceCapture = 180
+
 
 class ChineseChessBoard():
     RED = 1
@@ -19,6 +22,25 @@ class ChineseChessBoard():
         ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
         ['r1', 'n1', 'b1', 'a1', 'k', 'a2', 'b2', 'n2', 'r2']
     ]
+
+    Fen_2_Idx = {
+        'p': 0,
+        'P': 0,
+        'c': 1,
+        'C': 1,
+        'r': 2,
+        'R': 2,
+        'k': 3,
+        'K': 3,
+        'b': 4,
+        'B': 4,
+        'a': 5,
+        'A': 5,
+        'n': 6,
+        'N': 6
+    }
+    PIECE_NUM = 14
+
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
     def __init__(self, board=None):
@@ -36,7 +58,7 @@ class ChineseChessBoard():
                     self.name2point[piece] = (j, i)
         self.get_legal_actions_flag = False
         self.get_legal_actions()
-    
+
     def to_fen(self):
         fen_parts = []
         for i in range(self.height):
@@ -51,6 +73,44 @@ class ChineseChessBoard():
                         row_str += str(empty_count)
                         empty_count = 0
                     row_str += cell[0].swapcase()
+            if empty_count > 0:
+                row_str += str(empty_count)
+            fen_parts.append(row_str)
+        fen = '/'.join(fen_parts)
+        return fen
+    
+    def fen_to_planes(self):
+        planes = np.zeros(shape=(self.PIECE_NUM, self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.float32)
+        rows = self.to_fen().split('/')
+
+        for i in range(len(rows)):
+            row = rows[i]
+            j = 0
+            for letter in row:
+                if letter.isalpha():
+                    # 0 ~ 7 : upper, 7 ~ 14: lower
+                    planes[self.Fen_2_Idx[letter] + int(letter.islower()) * 7][i][j] = 1
+                    j += 1
+                else:
+                    j += int(letter)
+        return planes
+
+    def to_fen2(self):
+        fen_parts = []
+        for i in range(self.height):
+            empty_count = 0
+            row_str = ""
+            for j in range(self.width):
+                cell = self[i, j]
+                if cell == '.':
+                    empty_count += 1
+                else:
+                    if empty_count > 0:
+                        row_str += str(empty_count)
+                        empty_count = 0
+                    row_str += cell[0].swapcase()
+                    if len(cell) > 1:
+                        row_str += "(" + cell[1] + ")"
             if empty_count > 0:
                 row_str += str(empty_count)
             fen_parts.append(row_str)
@@ -81,12 +141,16 @@ class ChineseChessBoard():
 
     def get_winner(self, color):
         if 'k' not in self.name2point:
+            # print(f"no red king black win")
             return Winner.black
         elif 'K' not in self.name2point:
+            # print(f"no black king red win")
             return Winner.red
         if color == ChineseChessBoard.RED and len(self._red_legal_actions) <= 0:
+            # print(f"red no legal_actions black win")
             return Winner.black
         if color == ChineseChessBoard.BLACK and len(self._black_legal_actions) <= 0:
+            # print(f"black no legal_actions red win")
             return Winner.red
         kx, ky = self.name2point['k']
         Kx, Ky = self.name2point['K']
@@ -100,14 +164,18 @@ class ChineseChessBoard():
                 i += 1
             if not has_block:
                 if color == ChineseChessBoard.RED:
+                    # print(f"king confrontation red win")
                     return Winner.red
                 else:
+                    # print(f"king confrontation black win")
                     return Winner.black
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
-            print(f"turn_num={self.get_turn_num()} last_piece_capture_turn_num={self.get_last_piece_capture_turn_num()}")
+            # print(f"draw return black win")
             return Winner.black
+        return None
+
     def print_board(self):
         for i in range(self.height):
             row_str = f"{i:2d} "
@@ -147,69 +215,86 @@ class ChineseChessBoard():
             return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
         self.get_legal_actions_flag = True
         self._red_legal_moves = set(self._init_legal_moves(ChineseChessBoard.RED))
-        self._red_legal_actions = set([self.move_to_action(*move) for move in self._red_legal_moves])
+        red_legal_actions = []
+        self._kill_K_moves = []
+        for move in self._red_legal_moves:
+            a = self.move_to_action(*move)
+            if self[move[3], move[2]] == 'K':
+                self._kill_K_moves.append(move)
+            red_legal_actions.append(a)
+        self._red_legal_actions = set(red_legal_actions)
         self._black_legal_moves = set(self._init_legal_moves(ChineseChessBoard.BLACK))
-        self._black_legal_actions = set([self.move_to_action(*move) for move in self._black_legal_moves])
+        black_legal_actions = []
+        self._kill_k_moves = []
+        for move in self._black_legal_moves:
+            a = self.move_to_action(*move)
+            if self[move[3], move[2]] == 'k':
+                self._kill_k_moves.append(move)
+            black_legal_actions.append(a)
+        self._black_legal_actions = set(black_legal_actions)
         return self._red_legal_actions if color == ChineseChessBoard.RED else self._black_legal_actions
 
     mov_dir = {
         'k': [(0, -1), (1, 0), (0, 1), (-1, 0), 
-              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
-              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
-        'K': [(0, -1), (1, 0), (0, 1), (-1, 0), 
-              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
-              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
+            (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
+            (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
+        'K': [(0, 1), (-1, 0), (0, -1), (1, 0), 
+            (0, 9), (0, 8), (0, 7), (0, 6), (0, 5),
+            (0, -9), (0, -8), (0, -7), (0, -6), (0, -5)],
         'a': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
-        'A': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
+        'A': [(1, 1), (-1, 1), (1, -1), (-1, -1)],
         'b': [(-2, -2), (2, -2), (2, 2), (-2, 2)],
-        'B': [(-2, -2), (2, -2), (2, 2), (-2, 2)],
+        'B': [(2, 2), (-2, 2), (2, -2), (-2, -2)],
         'n': [(-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)],
-        'N': [(-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)],
+        'N': [(1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1), (2, 1)],
         'p': [(0, -1), (0, 1), (-1, 0), (1, 0)],
-        'P': [(0, -1), (0, 1), (-1, 0), (1, 0)]
+        'P': [(0, 1), (0, -1), (1, 0), (-1, 0)]
     }
     stright_action_func = lambda name, action_delta, x, y:  (action_delta, y) if action_delta <= 8 else (x, action_delta - 9)
     action_func = lambda name, action_delta, x, y: (x + ChineseChessBoard.mov_dir[name[0]][action_delta][0], y + ChineseChessBoard.mov_dir[name[0]][action_delta][1])
     r_stright_action_func = lambda name, x1, y1, x2, y2: x2 if y1 == y2 else (y2 + 9)
     r_action_func = lambda name, x1, y1, x2, y2: ChineseChessBoard.mov_dir[name[0]].index((x2 - x1, y2 - y1))
-    
+    red_action_to_black_action = 142
     action_dict = {
-        "r1": (0, 18, stright_action_func),
-        "r2": (19, 37, stright_action_func),
-        "R1": (38, 56, stright_action_func),
-        "R2": (57, 75, stright_action_func),
-        "c1": (76, 94, stright_action_func),
-        "c2": (95, 113, stright_action_func),
-        "C1": (114, 132, stright_action_func),
-        "C2": (133, 151, stright_action_func),
-        "n1": (152, 159, action_func),
-        "n2": (160, 167, action_func),
-        "N1": (168, 175, action_func),
-        "N2": (176, 183, action_func),
-        "b1": (184, 187, action_func),
-        "b2": (188, 191, action_func),
-        "B1": (192, 195, action_func),
-        "B2": (196, 199, action_func),
-        "a1": (200, 203, action_func),
-        "a2": (204, 207, action_func),
-        "A1": (208, 211, action_func),
-        "A2": (212, 215, action_func),
-        "p1": (216, 219, action_func),
-        "p2": (220, 223, action_func),
-        "p3": (224, 227, action_func),
-        "p4": (228, 231, action_func),
-        "p5": (232, 235, action_func),
-        "P1": (236, 239, action_func),
-        "P2": (240, 243, action_func),
-        "P3": (244, 247, action_func),
-        "P4": (248, 251, action_func),
-        "P5": (252, 255, action_func),
-        "k": (256, 269, action_func),
-        "K": (270, 283, action_func),
-        ".": (284, -1, None)
+        # 小写阵营 (红方)
+        "r1": (1, 19, stright_action_func),
+        "r2": (20, 38, stright_action_func),
+        "c1": (39, 57, stright_action_func), 
+        "c2": (58, 76, stright_action_func), 
+        "n1": (77, 84, action_func),         
+        "n2": (85, 92, action_func),         
+        "b1": (93, 96, action_func),         
+        "b2": (97, 100, action_func),        
+        "a1": (101, 104, action_func),       
+        "a2": (105, 108, action_func),       
+        "k": (109, 122, action_func),        
+        "p1": (123, 126, action_func),       
+        "p2": (127, 130, action_func),
+        "p3": (131, 134, action_func),
+        "p4": (135, 138, action_func),
+        "p5": (139, 142, action_func),
+
+        # 大写阵营 (黑方) 
+        "R1": (143, 161, stright_action_func), 
+        "R2": (162, 180, stright_action_func),
+        "C1": (181, 199, stright_action_func), 
+        "C2": (200, 218, stright_action_func),
+        "N1": (219, 226, action_func),         
+        "N2": (227, 234, action_func),
+        "B1": (235, 238, action_func),         
+        "B2": (239, 242, action_func),
+        "A1": (243, 246, action_func),         
+        "A2": (247, 250, action_func),
+        "K": (251, 264, action_func),          
+        "P1": (265, 268, action_func),         
+        "P2": (269, 272, action_func),
+        "P3": (273, 276, action_func),
+        "P4": (277, 280, action_func),
+        "P5": (281, 284, action_func),
+        ".": (285, -1, None)
     }
     num_to_name = {v[0]: k for k, v in action_dict.items()}
-    action_size = max([v[1] for _, v in action_dict.items()]) + 1
+    action_size = max([v[1] for _, v in action_dict.items()])
     action_num_to_name = {num: action_name for action_name, (start, end, _) in action_dict.items() for num in range(start, end + 1)}
 
     def move_to_action(self, x1, y1, x2, y2):
@@ -219,10 +304,11 @@ class ChineseChessBoard():
         return ChineseChessBoard.action_dict[ch][0] + ChineseChessBoard.r_action_func(ch, x1, y1, x2, y2)
     
     def _is_same_side(self, x, y, color):
-        if color == ChineseChessBoard.RED and self[y, x].islower():
+        if color == ChineseChessBoard.RED and self[y, x][0].islower():
             return True
-        if color == ChineseChessBoard.BLACK and self[y, x].isupper():
+        if color == ChineseChessBoard.BLACK and self[y, x][0].isupper():
             return True
+        return False
     
     def _can_move(self, x, y, color): # basically check the move
         if x < 0 or x > self.width - 1:
@@ -277,6 +363,12 @@ class ChineseChessBoard():
                             continue
                         elif ch == 'p':  # for red pawn
                             if board_flag:
+                                if y_ > 6 or y_ > y:
+                                    continue
+                            else:
+                                if y_ < 3 or y_ < y:
+                                    continue
+                            if board_flag:
                                 if y > 4 and x_ != x:
                                     continue
                             else:
@@ -284,22 +376,42 @@ class ChineseChessBoard():
                                     continue
                         elif ch == 'P':  # for black pawn
                             if board_flag:
+                                if y_ < 3 or y_ < y:
+                                    continue
+                            else:
+                                if y_ > 6 or y_ > y:
+                                    continue
+                            if board_flag:
                                 if y < 5 and x_ != x:
                                     continue
                             else:
                                 if y > 4 and x_ != x:
                                     continue
                         elif ch == 'n' or ch == 'N' or ch == 'b' or ch == 'B': # for knight and bishop
+                            if ch == 'b':
+                                if board_flag:
+                                    if y_ < 5:
+                                        continue
+                                else:
+                                    if y_ > 4:
+                                        continue
+                            if ch == 'B':
+                                if board_flag:
+                                    if y_ > 4:
+                                        continue
+                                else:
+                                    if y_ < 5:
+                                        continue
                             if self[y+int(d[1]/2), x+int(d[0]/2)] != '.':
                                 continue
-                            elif ch == 'b':
+                            if ch == 'b':
                                 if board_flag:
                                     if y < 5:
                                         continue
                                 else:
                                     if y > 4:
                                         continue
-                            elif ch == 'B':
+                            if ch == 'B':
                                 if board_flag:
                                     if y > 4:
                                         continue
@@ -365,13 +477,24 @@ class ChineseChessBoard():
                             _legal_moves.append((x, y, x, d_))
                         if self._can_move(x, u_, color):
                             _legal_moves.append((x, y, x, u_))
+        _legal_moves = [move for move in _legal_moves if not (move[0] == move[2] and move[1] == move[3])]
         return _legal_moves
 
     def isValidAction(self, action, color):
-        return action in self._red_legal_actions if color == ChineseChessBoard.RED else action in self._black_legal_actions
+        if color == ChineseChessBoard.RED:
+            b = action in self._red_legal_actions
+        else:
+            b = action in self._black_legal_actions
+        if not b:
+            print(f"isValidAction action={action} color={color}")
+            print(f"_red_legal_actions={sorted(list(self._red_legal_actions))}")
+            print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
+            self.print_board()
+        return b
         
     def takeAction(self, action, color):
         # print(f"takeAction action={action} color={color}")
+        assert action > 0
         assert self.isValidAction(action, color)
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
@@ -396,16 +519,41 @@ class ChineseChessGame():
     See othello/OthelloGame.py for an example implementation.
     """
     def __init__(self, board=None):
+        self.cnt = 0
         if board is not None:
             self.board = ChineseChessBoard(board)
         else:
             self.board = ChineseChessBoard()
     
+    def getSearchAIAction(self, board, player):
+        originBoard = board
+        canonicalBoard = self.getCanonicalForm(originBoard, player)
+        board = ChineseChessBoard(canonicalBoard)
+        if player == ChineseChessBoard.RED and len(board._kill_K_moves) > 0:
+            print(f"has _kill_K_moves={board._kill_K_moves}")
+            m = board._kill_K_moves[0]
+            return self.move_to_action(originBoard, *m)
+        if player == ChineseChessBoard.BLACK and len(board._kill_k_moves) > 0:
+            print(f"has _kill_k_moves={board._kill_k_moves}")
+            m = board._kill_k_moves[0]
+            return self.move_to_action(originBoard, *m)
+        from chinese_chess.xqlightpy.ai_play2 import predict_best_move_and_score
+        fen_board = self.get_fen(canonicalBoard)
+        fen_board = fen_board + (' w' if player == 1 else ' b')
+        move = predict_best_move_and_score(fen_board)
+        try:
+            x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
+            return self.move_to_action(originBoard, x1, y1, x2, y2)
+        except Exception as e:
+            moves = board._black_legal_moves if player == ChineseChessBoard.BLACK else board._red_legal_moves
+            m = random.choice(list(moves))
+            return self.move_to_action(originBoard, *m)
+    
     def getInitBoard(self):
         return ChineseChessBoard().board
     
     def getBoardSize(self):
-        return (self.board.width, self.board.height)
+        return (ChineseChessBoard.PIECE_NUM, self.board.width, self.board.height)
 
     def getActionSize(self):
         return ChineseChessBoard.action_size
@@ -421,6 +569,7 @@ class ChineseChessGame():
             nextBoard: board after applying action
             nextPlayer: player who plays in the next turn (should be -player)
         """
+        self.cnt += 1
         next_player = -player
         if player == ChineseChessBoard.RED:
             board = ChineseChessBoard(board)
@@ -514,10 +663,54 @@ class ChineseChessGame():
         """
         # For Chinese Chess, symmetry might be more complex due to the board's layout
         # For simplicity, we return the original board and pi
-        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH,)
-        board = board[:-2]
-        board = board.reshape(ChineseChessBoard.BOARD_HEIGHT, ChineseChessBoard.BOARD_WIDTH)
-        return [(board, pi)]
+        assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
+        board = ChineseChessBoard(board)
+        board_np = board.fen_to_planes()
+        def rotate_180(board):
+            height = board.BOARD_HEIGHT
+            width = board.BOARD_WIDTH
+            board_rotate180 = ChineseChessBoard()
+            for i in range(height):
+                for j in range(width):
+                    board_rotate180[height - 1 - i, width - 1 - j] = board[i, j]
+            return ChineseChessBoard(board_rotate180.board)
+        board_rotate180 = rotate_180(board)
+        board_rotate180_np = board_rotate180.fen_to_planes()
+        # board 镜像 move 的 delta[0] * -1 进行转换
+        def mirror(matrix):
+            height = board.BOARD_HEIGHT
+            width = board.BOARD_WIDTH
+            mirrored = ChineseChessBoard()
+            for i in range(height):
+                for j in range(width):
+                    mirrored[height - 1 - i, j] = matrix[i, j]
+            return ChineseChessBoard(mirrored.board)
+        board_mirror = mirror(board)
+        board_mirror_np = board_mirror.fen_to_planes()
+        height = board.BOARD_HEIGHT
+        width = board.BOARD_WIDTH
+        pi_rotate180 = [0]*len(pi)
+        pi_mirror = [0]*len(pi)
+        # board.print_board()
+        # board_rotate180.print_board()
+        # board_mirror.print_board()
+        for m in board._red_legal_moves:
+            a = board.move_to_action(*m)
+            d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
+            m1 = (width - 1 - m[0], height - 1 - m[1])
+            m1 = (m1[0], m1[1], m1[0]+d1[0], m1[1]+d1[1])
+            # print(f"{m} -> {m1}")
+            a1 = board_rotate180.move_to_action(*m1)
+            assert a1 in board_rotate180._black_legal_actions or a1 in board_rotate180._red_legal_actions
+            pi_rotate180[a1] = pi[a]
+            d2 = ((m[2] - m[0]), -1*(m[3] - m[1]))
+            m2 = (m[0], height - 1 - m[1])
+            m2 = (m2[0], m2[1], m2[0]+d2[0], m2[1]+d2[1])
+            # print(f"{m} -> {m2}")
+            a2 = board_mirror.move_to_action(*m2)
+            assert a2 in board_mirror._black_legal_actions or a2 in board_mirror._red_legal_actions
+            pi_mirror[a2] = pi[a]
+        return [(board_np, pi), (board_rotate180_np, pi_rotate180), (board_mirror_np, pi_mirror)]
 
     def stringRepresentation(self, board):
         """
@@ -528,8 +721,8 @@ class ChineseChessGame():
             boardString: a quick conversion of board to a string format.
                          Required by MCTS for hashing.
         """
-        board == board[:-2]
-        return ''.join([''.join(row) for row in board])
+        board = ChineseChessBoard(board)
+        return board.to_fen2()
     
     def get_elephantfish_board(self, board):
         board = ChineseChessBoard(board)
@@ -553,14 +746,17 @@ class ChineseChessGame():
         board.print_board()
     
     @staticmethod
+    def convert_predict_board(board):
+        board = ChineseChessBoard(board)
+        return board.fen_to_planes()
+    
+    @staticmethod
     def move_to_action(board, x1, y1, x2, y2):
         board = ChineseChessBoard(board)
         return board.move_to_action(x1, y1, x2, y2)-1
     
 if __name__ == "__main__":
-    game = ChineseChessGame()
-    board = game.getInitBoard()
-    curPlayer = 1
-    canonicalBoard = game.getCanonicalForm(board, curPlayer)
-    game.display(canonicalBoard)
-    valids = game.getValidMoves(canonicalBoard, curPlayer)
+    board = ChineseChessBoard()
+    board.print_board()
+    print(board.to_fen2())
+    print(sorted(list(board.get_legal_actions())))
