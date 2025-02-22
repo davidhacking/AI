@@ -141,16 +141,16 @@ class ChineseChessBoard():
 
     def get_winner(self, color):
         if 'k' not in self.name2point:
-            print(f"no red king black win")
+            # print(f"no red king black win")
             return Winner.black
         elif 'K' not in self.name2point:
-            print(f"no black king red win")
+            # print(f"no black king red win")
             return Winner.red
         if color == ChineseChessBoard.RED and len(self._red_legal_actions) <= 0:
-            print(f"red no legal_actions black win")
+            # print(f"red no legal_actions black win")
             return Winner.black
         if color == ChineseChessBoard.BLACK and len(self._black_legal_actions) <= 0:
-            print(f"black no legal_actions red win")
+            # print(f"black no legal_actions red win")
             return Winner.red
         kx, ky = self.name2point['k']
         Kx, Ky = self.name2point['K']
@@ -164,15 +164,15 @@ class ChineseChessBoard():
                 i += 1
             if not has_block:
                 if color == ChineseChessBoard.RED:
-                    print(f"king confrontation red win")
+                    # print(f"king confrontation red win")
                     return Winner.red
                 else:
-                    print(f"king confrontation black win")
+                    # print(f"king confrontation black win")
                     return Winner.black
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
-            print(f"draw return black win")
+            # print(f"draw return black win")
             return Winner.black
         return None
 
@@ -672,6 +672,7 @@ class ChineseChessGame():
                 # 180度旋转第二、三维度
                 rotated = planes[i, ::-1, ::-1]  # 使用切片实现180度旋转
                 transformed_planes[i + 7] = rotated
+            return transformed_planes
         return [(board, pi), (rotate180_onehot_board(board), pi[::-1])]
 
     def stringRepresentation(self, board):
