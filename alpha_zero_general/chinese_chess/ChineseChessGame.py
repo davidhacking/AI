@@ -666,16 +666,13 @@ class ChineseChessGame():
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
         board = board.fen_to_planes()
-        def rotate_and_map_onehot_board(board):
-            # 旋转180度
-            rotated_board = np.rot90(board, k=2, axes=(1, 2))  # 对 height 和 width 维度旋转
-            # 映射 one-hot 位置
-            # 0~6 -> 7~14, 7~14 -> 0~6
-            mapped_board = np.zeros_like(rotated_board)
-            mapped_board[:, :, :7] = rotated_board[:, :, 7:14]  # 将 7~14 映射到 0~6
-            mapped_board[:, :, 7:14] = rotated_board[:, :, :7]  # 将 0~6 映射到 7~14
-            return mapped_board
-        return [(board, pi), (rotate_and_map_onehot_board(board), pi[::-1])]
+        def rotate180_onehot_board(planes):
+            transformed_planes = np.zeros_like(planes)
+            for i in range(7):
+                # 180度旋转第二、三维度
+                rotated = planes[i, ::-1, ::-1]  # 使用切片实现180度旋转
+                transformed_planes[i + 7] = rotated
+        return [(board, pi), (rotate180_onehot_board(board), pi[::-1])]
 
     def stringRepresentation(self, board):
         """
