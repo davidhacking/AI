@@ -665,15 +665,52 @@ class ChineseChessGame():
         # For simplicity, we return the original board and pi
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
-        board = board.fen_to_planes()
-        def rotate180_onehot_board(planes):
-            transformed_planes = np.zeros_like(planes)
-            for i in range(7):
-                # 180度旋转第二、三维度
-                rotated = planes[i, ::-1, ::-1]  # 使用切片实现180度旋转
-                transformed_planes[i + 7] = rotated
-            return transformed_planes
-        return [(board, pi), (rotate180_onehot_board(board), pi[::-1])]
+        board_np = board.fen_to_planes()
+        def rotate_180(board):
+            height = board.BOARD_HEIGHT
+            width = board.BOARD_WIDTH
+            board_rotate180 = ChineseChessBoard()
+            for i in range(height):
+                for j in range(width):
+                    board_rotate180[height - 1 - i, width - 1 - j] = board[i, j]
+            return ChineseChessBoard(board_rotate180.board)
+        board_rotate180 = rotate_180(board)
+        board_rotate180_np = board_rotate180.fen_to_planes()
+        # board 镜像 move 的 delta[0] * -1 进行转换
+        def mirror(matrix):
+            height = board.BOARD_HEIGHT
+            width = board.BOARD_WIDTH
+            mirrored = ChineseChessBoard()
+            for i in range(height):
+                for j in range(width):
+                    mirrored[height - 1 - i, j] = matrix[i, j]
+            return ChineseChessBoard(mirrored.board)
+        board_mirror = mirror(board)
+        board_mirror_np = board_mirror.fen_to_planes()
+        height = board.BOARD_HEIGHT
+        width = board.BOARD_WIDTH
+        pi_rotate180 = [0]*len(pi)
+        pi_mirror = [0]*len(pi)
+        # board.print_board()
+        # board_rotate180.print_board()
+        # board_mirror.print_board()
+        for m in board._red_legal_moves:
+            a = board.move_to_action(*m)
+            d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
+            m1 = (width - 1 - m[0], height - 1 - m[1])
+            m1 = (m1[0], m1[1], m1[0]+d1[0], m1[1]+d1[1])
+            # print(f"{m} -> {m1}")
+            a1 = board_rotate180.move_to_action(*m1)
+            assert a1 in board_rotate180._black_legal_actions or a1 in board_rotate180._red_legal_actions
+            pi_rotate180[a1] = pi[a]
+            d2 = ((m[2] - m[0]), -1*(m[3] - m[1]))
+            m2 = (m[0], height - 1 - m[1])
+            m2 = (m2[0], m2[1], m2[0]+d2[0], m2[1]+d2[1])
+            # print(f"{m} -> {m2}")
+            a2 = board_mirror.move_to_action(*m2)
+            assert a2 in board_mirror._black_legal_actions or a2 in board_mirror._red_legal_actions
+            pi_mirror[a2] = pi[a]
+        return [(board_np, pi), (board_rotate180_np, pi_rotate180), (board_mirror_np, pi_mirror)]
 
     def stringRepresentation(self, board):
         """
