@@ -24,25 +24,42 @@ class ChineseChessBoard():
     ]
 
     Fen_2_Idx = {
-        'p': 0,
-        'c': 1,
-        'r': 2,
-        'n': 3,
-        'b': 4,
-        'a': 5,
-        'k': 6,
-        'P': 7,
-        'C': 8,
-        'R': 9,
-        'N': 10,
-        'B': 11,
-        'A': 12,
-        'K': 13,
+        'p1': 0,
+        'p2': 1,
+        'p3': 2,
+        'p4': 3,
+        'p5': 4,
+        'c1': 5,
+        'c2': 6,
+        'r1': 7,
+        'r2': 8,
+        'n1': 9,
+        'n2': 10,
+        'b1': 11,
+        'b2': 12,
+        'a1': 13,
+        'a2': 14,
+        'k': 15,
+        'P1': 16,
+        'P2': 17,
+        'P3': 18,
+        'P4': 19,
+        'P5': 20,
+        'C1': 21,
+        'C2': 22,
+        'R1': 23,
+        'R2': 24,
+        'N1': 25,
+        'N2': 26,
+        'B1': 27,
+        'B2': 28,
+        'A1': 29,
+        'A2': 30,
+        'K': 31,
     }
     Idx_2_Fen = {
         v: k for k, v in Fen_2_Idx.items()
     }
-    PIECE_NUM = 14
 
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
@@ -84,18 +101,11 @@ class ChineseChessBoard():
     
     def fen_to_planes(self):
         planes = np.zeros(shape=(self.PIECE_NUM, self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.float32)
-        rows = self.to_fen().split('/')
-
-        for i in range(len(rows)):
-            row = rows[i]
-            j = 0
-            for letter in row:
-                if letter.isalpha():
-                    # 0 ~ 7 : upper, 7 ~ 14: lower
+        for i in range(self.BOARD_HEIGHT):
+            for j in range(self.BOARD_WIDTH):
+                letter = self[i, j]
+                if letter != '.':
                     planes[self.Fen_2_Idx[letter]][i][j] = 1
-                    j += 1
-                else:
-                    j += int(letter)
         return planes
 
     def to_fen2(self):
@@ -296,6 +306,7 @@ class ChineseChessBoard():
         "P5": (281, 284, action_func),
         ".": (285, -1, None)
     }
+    PIECE_NUM = len(action_dict.keys()) - 1
     num_to_name = {v[0]: k for k, v in action_dict.items()}
     action_size = max([v[1] for _, v in action_dict.items()])
     action_num_to_name = {num: action_name for action_name, (start, end, _) in action_dict.items() for num in range(start, end + 1)}
