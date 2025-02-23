@@ -494,19 +494,23 @@ class ChineseChessBoard():
             print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
             self.print_board()
         return b
-        
-    def takeAction(self, action, color):
-        # print(f"takeAction action={action} color={color}")
-        assert action > 0
-        assert self.isValidAction(action, color)
+    
+    def action_to_move(self, action):
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
         x1, y1 = self.name2point[name]
         action_item = ChineseChessBoard.action_dict[name]
         x2, y2 = action_item[2](name, action-action_item[0], x1, y1)
+        return x1, y1, x2, y2
+        
+    def takeAction(self, action, color):
+        # print(f"takeAction action={action} color={color}")
+        assert action > 0
+        assert self.isValidAction(action, color)
+        x1, y1, x2, y2 = self.action_to_move(action)
         old_piece = self[y2, x2]
         self[y1, x1] = '.'
-        self[y2, x2] = name
+        self[y2, x2] = ChineseChessBoard.action_num_to_name[action]
         if old_piece != '.':
             self.set_last_piece_capture_turn_num(self.get_turn_num())
         self.inc_turn_num()
