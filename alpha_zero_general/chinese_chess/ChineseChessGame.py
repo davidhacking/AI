@@ -306,7 +306,7 @@ class ChineseChessBoard():
         "P5": (281, 284, action_func),
         ".": (285, -1, None)
     }
-    PIECE_NUM = len(action_dict.keys()) - 1
+    PIECE_NUM = 32
     num_to_name = {v[0]: k for k, v in action_dict.items()}
     action_size = max([v[1] for _, v in action_dict.items()])
     action_num_to_name = {num: action_name for action_name, (start, end, _) in action_dict.items() for num in range(start, end + 1)}
@@ -684,6 +684,7 @@ class ChineseChessGame():
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
         board_np = board.fen_to_planes()
+        return [(board_np, pi)]
         def rotate_180(board):
             height = board.BOARD_HEIGHT
             width = board.BOARD_WIDTH
