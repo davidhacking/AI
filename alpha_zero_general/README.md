@@ -82,12 +82,15 @@ $$
   - $\sum_{b}N(s,b)$ = sum(N[s])
 - 开发环境
   - 基础镜像：pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
-  - pip install coloredlogs==15.0.1
+  - pip install coloredlogs==15.0.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
 - 通过getSymmetries函数得到更多的训练数据
 - 模型训练的输入是什么
   ```python
   boards = torch.FloatTensor(np.array(boards).astype(np.float64))
   ```
+
+## TODO
+- 棋盘board加入当前行动玩家 当前进行轮次数 上一次吃子轮次数
 
 
 
