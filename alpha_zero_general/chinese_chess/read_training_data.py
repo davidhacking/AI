@@ -18,9 +18,11 @@ if __name__ == '__main__':
                 print("==============================")
                 print(f"index={index}, r={r}")
                 board.print_board()
+                k = 0
                 for i, pi in enumerate(p):
                     if pi == 0:
                         continue
+                    k += 1
                     m = board.action_to_move(i+1)
-                    print(f"{m}: {pi}")
+                    print(f"{k}. {i+1} {m}: {pi}")
                 input("enter...")
