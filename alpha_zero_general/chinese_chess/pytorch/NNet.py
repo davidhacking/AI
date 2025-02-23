@@ -14,7 +14,10 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-from .ChineseChessNNet import CChessModel as ccnet
+try:
+    from .ChineseChessNNet import CChessModel as ccnet
+except ImportError:
+    from ChineseChessNNet import CChessModel as ccnet
 
 args = dotdict({
     'lr': 0.001,
@@ -98,7 +101,7 @@ class NNetWrapper(NeuralNet):
                 pi = torch.softmax(pi, dim=1)
 
             # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
-            return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
+            return pi.data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
         return self.criterion(outputs, targets)
@@ -125,3 +128,39 @@ class NNetWrapper(NeuralNet):
         map_location = None if args.cuda else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location)
         self.nnet.load_state_dict(checkpoint['state_dict'])
+
+# 添加 MockGame 类
+class MockGame:
+    def getBoardSize(self):
+        return (14, 10, 9)
+
+    def getActionSize(self):
+        return 284
+
+    def convert_predict_board(self, board):
+        return board
+
+# 添加测试函数
+def test_train_and_predict():
+    game = MockGame()
+    nnet = NNetWrapper(game)
+    
+    # 创建一些示例数据
+    examples = [
+        (np.random.rand(14, 10, 9), np.random.rand(284), np.random.rand(1)) for _ in range(100)
+    ]
+    
+    # 训练模型
+    nnet.train(examples)
+    
+    # 创建一个示例棋盘
+    board = np.random.rand(14, 10, 9)
+    
+    # 预测
+    pi, v = nnet.predict(board)
+    print(f"Predicted policy: {pi}")
+    print(f"Predicted value: {v}")
+
+# 修改 main 函数
+if __name__ == '__main__':
+    test_train_and_predict()
