@@ -25,19 +25,22 @@ class ChineseChessBoard():
 
     Fen_2_Idx = {
         'p': 0,
-        'P': 0,
         'c': 1,
-        'C': 1,
         'r': 2,
-        'R': 2,
-        'k': 3,
-        'K': 3,
+        'n': 3,
         'b': 4,
-        'B': 4,
         'a': 5,
-        'A': 5,
-        'n': 6,
-        'N': 6
+        'k': 6,
+        'P': 7,
+        'C': 8,
+        'R': 9,
+        'N': 10,
+        'B': 11,
+        'A': 12,
+        'K': 13,
+    }
+    Idx_2_Fen = {
+        v: k for k, v in Fen_2_Idx.items()
     }
     PIECE_NUM = 14
 
@@ -89,7 +92,7 @@ class ChineseChessBoard():
             for letter in row:
                 if letter.isalpha():
                     # 0 ~ 7 : upper, 7 ~ 14: lower
-                    planes[self.Fen_2_Idx[letter] + int(letter.islower()) * 7][i][j] = 1
+                    planes[self.Fen_2_Idx[letter]][i][j] = 1
                     j += 1
                 else:
                     j += int(letter)
