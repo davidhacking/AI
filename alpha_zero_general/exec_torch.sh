@@ -1,0 +1,1 @@
+docker exec -it $(docker ps -qf "ancestor=pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime") bash

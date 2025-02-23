@@ -707,27 +707,30 @@ class ChineseChessGame():
         board_mirror_np = board_mirror.fen_to_planes()
         height = board.BOARD_HEIGHT
         width = board.BOARD_WIDTH
-        pi_rotate180 = [0]*len(pi)
-        pi_mirror = [0]*len(pi)
+        pi_rotate180 = [0 for _ in range(len(pi))]
+        pi_mirror = [0 for _ in range(len(pi))]
         # board.print_board()
         # board_rotate180.print_board()
         # board_mirror.print_board()
-        for m in board._red_legal_moves:
-            a = board.move_to_action(*m)
+        for a, p in enumerate(pi):
+            if p == 0:
+                continue
+            a = a + 1
+            m = board.action_to_move(a)
             d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
             m1 = (width - 1 - m[0], height - 1 - m[1])
             m1 = (m1[0], m1[1], m1[0]+d1[0], m1[1]+d1[1])
             # print(f"{m} -> {m1}")
             a1 = board_rotate180.move_to_action(*m1)
             assert a1 in board_rotate180._black_legal_actions or a1 in board_rotate180._red_legal_actions
-            pi_rotate180[a1] = pi[a]
+            pi_rotate180[a1] = pi[a-1]
             d2 = ((m[2] - m[0]), -1*(m[3] - m[1]))
             m2 = (m[0], height - 1 - m[1])
             m2 = (m2[0], m2[1], m2[0]+d2[0], m2[1]+d2[1])
             # print(f"{m} -> {m2}")
             a2 = board_mirror.move_to_action(*m2)
             assert a2 in board_mirror._black_legal_actions or a2 in board_mirror._red_legal_actions
-            pi_mirror[a2] = pi[a]
+            pi_mirror[a2] = pi[a-1]
         return [(board_np, pi), (board_rotate180_np, pi_rotate180), (board_mirror_np, pi_mirror)]
 
     def stringRepresentation(self, board):
