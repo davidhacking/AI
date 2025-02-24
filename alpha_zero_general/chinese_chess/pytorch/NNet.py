@@ -14,6 +14,7 @@ import torch
 import torch.optim as optim
 
 from .ChineseChessNNet import CChessModel as ccnet
+import torch.nn as nn
 
 args = dotdict({
     'lr': 0.001,
@@ -32,6 +33,7 @@ class NNetWrapper(NeuralNet):
         self.game = game
         self.piece_num, self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
+        self.criterion = nn.CrossEntropyLoss()
         if args.cuda:
             self.nnet.cuda()
 
@@ -93,12 +95,13 @@ class NNetWrapper(NeuralNet):
             self.nnet.eval()
             with torch.no_grad():
                 pi, v = self.nnet(board)
+                pi = torch.softmax(pi, dim=1)
 
             # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
-            return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
+            return pi.data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
-        return -torch.sum(targets * outputs) / targets.size()[0]
+        return self.criterion(outputs, targets)
 
     def loss_v(self, targets, outputs):
         return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
