@@ -109,7 +109,7 @@ class Arena():
         
         if not self.need_reverse_play:
             return
-        
+        print(f"Arena.playGames (1) oneWon={oneWon}, twoWon={twoWon}")
         self.player1, self.player2 = self.player2, self.player1
 
         for _ in tqdm(range(num), desc="Arena.playGames (2)"):
@@ -120,5 +120,5 @@ class Arena():
                 twoWon += 1
             else:
                 draws += 1
-
+        print(f"Arena.playGames (2) oneWon={oneWon}, twoWon={twoWon}")
         return oneWon, twoWon, draws

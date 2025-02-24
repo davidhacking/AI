@@ -4,7 +4,7 @@ import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 180
+MaximumTurnsWithoutPieceCapture = 640
 
 
 class ChineseChessBoard():
@@ -24,42 +24,22 @@ class ChineseChessBoard():
     ]
 
     Fen_2_Idx = {
-        'p1': 0,
-        'p2': 1,
-        'p3': 2,
-        'p4': 3,
-        'p5': 4,
-        'c1': 5,
-        'c2': 6,
-        'r1': 7,
-        'r2': 8,
-        'n1': 9,
-        'n2': 10,
-        'b1': 11,
-        'b2': 12,
-        'a1': 13,
-        'a2': 14,
-        'k': 15,
-        'P1': 16,
-        'P2': 17,
-        'P3': 18,
-        'P4': 19,
-        'P5': 20,
-        'C1': 21,
-        'C2': 22,
-        'R1': 23,
-        'R2': 24,
-        'N1': 25,
-        'N2': 26,
-        'B1': 27,
-        'B2': 28,
-        'A1': 29,
-        'A2': 30,
-        'K': 31,
+        'p': 0,
+        'P': 0,
+        'c': 1,
+        'C': 1,
+        'r': 2,
+        'R': 2,
+        'k': 3,
+        'K': 3,
+        'b': 4,
+        'B': 4,
+        'a': 5,
+        'A': 5,
+        'n': 6,
+        'N': 6
     }
-    Idx_2_Fen = {
-        v: k for k, v in Fen_2_Idx.items()
-    }
+    PIECE_NUM = 14
 
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
@@ -101,11 +81,18 @@ class ChineseChessBoard():
     
     def fen_to_planes(self):
         planes = np.zeros(shape=(self.PIECE_NUM, self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.float32)
-        for i in range(self.BOARD_HEIGHT):
-            for j in range(self.BOARD_WIDTH):
-                letter = self[i, j]
-                if letter != '.':
-                    planes[self.Fen_2_Idx[letter]][i][j] = 1
+        rows = self.to_fen().split('/')
+
+        for i in range(len(rows)):
+            row = rows[i]
+            j = 0
+            for letter in row:
+                if letter.isalpha():
+                    # 0 ~ 7 : upper, 7 ~ 14: lower
+                    planes[self.Fen_2_Idx[letter] + int(letter.islower()) * 7][i][j] = 1
+                    j += 1
+                else:
+                    j += int(letter)
         return planes
 
     def to_fen2(self):
@@ -249,66 +236,62 @@ class ChineseChessBoard():
 
     mov_dir = {
         'k': [(0, -1), (1, 0), (0, 1), (-1, 0), 
-            (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
-            (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
-        'K': [(0, 1), (-1, 0), (0, -1), (1, 0), 
-            (0, 9), (0, 8), (0, 7), (0, 6), (0, 5),
-            (0, -9), (0, -8), (0, -7), (0, -6), (0, -5)],
+              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
+              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
+        'K': [(0, -1), (1, 0), (0, 1), (-1, 0), 
+              (0, -9), (0, -8), (0, -7), (0, -6), (0, -5),
+              (0, 9), (0, 8), (0, 7), (0, 6), (0, 5)],
         'a': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
-        'A': [(1, 1), (-1, 1), (1, -1), (-1, -1)],
+        'A': [(-1, -1), (1, -1), (-1, 1), (1, 1)],
         'b': [(-2, -2), (2, -2), (2, 2), (-2, 2)],
-        'B': [(2, 2), (-2, 2), (2, -2), (-2, -2)],
+        'B': [(-2, -2), (2, -2), (2, 2), (-2, 2)],
         'n': [(-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)],
-        'N': [(1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1), (2, 1)],
+        'N': [(-1, -2), (1, -2), (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1)],
         'p': [(0, -1), (0, 1), (-1, 0), (1, 0)],
-        'P': [(0, 1), (0, -1), (1, 0), (-1, 0)]
+        'P': [(0, -1), (0, 1), (-1, 0), (1, 0)]
     }
     stright_action_func = lambda name, action_delta, x, y:  (action_delta, y) if action_delta <= 8 else (x, action_delta - 9)
     action_func = lambda name, action_delta, x, y: (x + ChineseChessBoard.mov_dir[name[0]][action_delta][0], y + ChineseChessBoard.mov_dir[name[0]][action_delta][1])
     r_stright_action_func = lambda name, x1, y1, x2, y2: x2 if y1 == y2 else (y2 + 9)
     r_action_func = lambda name, x1, y1, x2, y2: ChineseChessBoard.mov_dir[name[0]].index((x2 - x1, y2 - y1))
-    red_action_to_black_action = 142
+    
     action_dict = {
-        # 小写阵营 (红方)
         "r1": (1, 19, stright_action_func),
         "r2": (20, 38, stright_action_func),
-        "c1": (39, 57, stright_action_func), 
-        "c2": (58, 76, stright_action_func), 
-        "n1": (77, 84, action_func),         
-        "n2": (85, 92, action_func),         
-        "b1": (93, 96, action_func),         
-        "b2": (97, 100, action_func),        
-        "a1": (101, 104, action_func),       
-        "a2": (105, 108, action_func),       
-        "k": (109, 122, action_func),        
-        "p1": (123, 126, action_func),       
-        "p2": (127, 130, action_func),
-        "p3": (131, 134, action_func),
-        "p4": (135, 138, action_func),
-        "p5": (139, 142, action_func),
-
-        # 大写阵营 (黑方) 
-        "R1": (143, 161, stright_action_func), 
-        "R2": (162, 180, stright_action_func),
-        "C1": (181, 199, stright_action_func), 
-        "C2": (200, 218, stright_action_func),
-        "N1": (219, 226, action_func),         
-        "N2": (227, 234, action_func),
-        "B1": (235, 238, action_func),         
-        "B2": (239, 242, action_func),
-        "A1": (243, 246, action_func),         
-        "A2": (247, 250, action_func),
-        "K": (251, 264, action_func),          
-        "P1": (265, 268, action_func),         
-        "P2": (269, 272, action_func),
-        "P3": (273, 276, action_func),
-        "P4": (277, 280, action_func),
-        "P5": (281, 284, action_func),
+        "R1": (39, 57, stright_action_func),
+        "R2": (58, 76, stright_action_func),
+        "c1": (77, 95, stright_action_func),
+        "c2": (96, 114, stright_action_func),
+        "C1": (115, 133, stright_action_func),
+        "C2": (134, 152, stright_action_func),
+        "n1": (153, 160, action_func),
+        "n2": (161, 168, action_func),
+        "N1": (169, 176, action_func),
+        "N2": (177, 184, action_func),
+        "b1": (185, 188, action_func),
+        "b2": (189, 192, action_func),
+        "B1": (193, 196, action_func),
+        "B2": (197, 200, action_func),
+        "a1": (201, 204, action_func),
+        "a2": (205, 208, action_func),
+        "A1": (209, 212, action_func),
+        "A2": (213, 216, action_func),
+        "p1": (217, 220, action_func),
+        "p2": (221, 224, action_func),
+        "p3": (225, 228, action_func),
+        "p4": (229, 232, action_func),
+        "p5": (233, 236, action_func),
+        "P1": (237, 240, action_func),
+        "P2": (241, 244, action_func),
+        "P3": (245, 248, action_func),
+        "P4": (249, 252, action_func),
+        "P5": (253, 256, action_func),
+        "k": (257, 270, action_func),
+        "K": (271, 284, action_func),
         ".": (285, -1, None)
     }
-    PIECE_NUM = 32
     num_to_name = {v[0]: k for k, v in action_dict.items()}
-    action_size = max([v[1] for _, v in action_dict.items()])
+    action_size = max([v[1] for _, v in action_dict.items()]) + 1
     action_num_to_name = {num: action_name for action_name, (start, end, _) in action_dict.items() for num in range(start, end + 1)}
 
     def move_to_action(self, x1, y1, x2, y2):
@@ -505,7 +488,7 @@ class ChineseChessBoard():
             print(f"_black_legal_actions={sorted(list(self._black_legal_actions))}")
             self.print_board()
         return b
-    
+
     def action_to_move(self, action):
         name = ChineseChessBoard.action_num_to_name[action]
         assert name in self.name2point
@@ -684,7 +667,6 @@ class ChineseChessGame():
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
         board_np = board.fen_to_planes()
-        return [(board_np, pi)]
         def rotate_180(board):
             height = board.BOARD_HEIGHT
             width = board.BOARD_WIDTH
@@ -778,7 +760,19 @@ class ChineseChessGame():
         return board.move_to_action(x1, y1, x2, y2)-1
     
 if __name__ == "__main__":
-    board = ChineseChessBoard()
+    board = [
+        ['.', 'N1', 'B1', 'K', '.', 'A2', '.', '.', 'R2'],
+        ['.', '.', '.', '.', 'A1', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', 'B2', '.', 'N2', '.', '.'],
+        ['.', '.', '.', '.', '.', 'r2', '.', '.', '.'],
+        ['.', 'R1', 'p2', '.', '.', '.', '.', 'c2', 'P5'],
+        ['.', '.', '.', '.', '.', 'C2', 'b2', '.', '.'],
+        ['P1', '.', '.', '.', '.', '.', 'n2', '.', 'p5'],
+        ['c1', '.', '.', '.', 'b1', '.', '.', '.', '.'],
+        ['.', '.', '.', 'n1', 'a1', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', 'k', 'a2', '.', '.', '.']
+    ]
+    board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
     board.print_board()
     print(board.to_fen2())
     print(sorted(list(board.get_legal_actions())))

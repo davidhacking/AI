@@ -57,12 +57,13 @@ class ChineseChessNNet(nn.Module):
 
 class ModelConfig:
     def __init__(self):
-        self.cnn_filter_num = 512
+        self.cnn_filter_num = 192
         self.cnn_first_filter_size = 5
         self.cnn_filter_size = 3
         self.res_layer_num = 10
         self.l2_reg = 1e-4
         self.value_fc_size = 256
+        self.input_depth = 14
 
 class ResidualBlock(nn.Module):
     def __init__(self, mc):
@@ -125,7 +126,7 @@ class CChessModel(nn.Module):
         policy = F.relu(policy)
         policy = policy.view(-1, 4 * self.board_y * self.board_x)
         policy = self.policy_fc(policy)
-        policy = F.log_softmax(policy, dim=1)
+        policy = F.softmax(policy, dim=1)
 
         # 价值输出
         value = self.value_conv(res_out)

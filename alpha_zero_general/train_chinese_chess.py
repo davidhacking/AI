@@ -16,7 +16,7 @@ args = dotdict({
     'numIters': 1000,
     'numEps': 100,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 15,
-    'numProcesses': 10,
+    'numProcesses': 16,
     'minmaxIterations': 150,        #
     'ebsGreedyRate': 0,
     'updateThreshold': 0.55,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
