@@ -471,7 +471,6 @@ class ChineseChessBoard():
         
     def takeAction(self, action, color):
         # print(f"takeAction action={action} color={color}")
-        assert action > 0
         assert self.isValidAction(action, color)
         x1, y1, x2, y2 = self.action_to_move(action)
         ch = self[y1, x1]
