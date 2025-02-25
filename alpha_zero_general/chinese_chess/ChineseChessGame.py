@@ -179,7 +179,7 @@ class ChineseChessBoard():
         for j in range(self.width):
             col_numbers += f"{j:1d} "
         print(col_numbers)
-        print(f"turn_num={self.get_turn_num()}, lpctm={self.get_last_piece_capture_turn_num()}")
+        print(f"turn_num={self.get_turn_num()}, lpctn={self.get_last_piece_capture_turn_num()}")
 
     @staticmethod
     def get_board_array(ch_board):
@@ -542,23 +542,27 @@ class ChineseChessGame():
         board = ChineseChessBoard(board)
         if len(board._kill_K_moves) > 0:
             m = board._kill_K_moves[0]
-            print(f"board._kill_K_moves={board._kill_K_moves}")
+            # print(f"board._kill_K_moves={board._kill_K_moves}")
             return board.move_to_action(*m)
-        color = ' w' 
-        if not board.is_red_at_bottom():
+        is_red_at_bottom = board.is_red_at_bottom()
+        color = ' w'
+        if not is_red_at_bottom:
             color = ' b'
             board = self.getCanonicalForm(board.board, -1)
             board = ChineseChessBoard(board)
+        # board.print_board()
         from chinese_chess.xqlightpy.ai_play2 import predict_best_move_and_score
         fen_board = board.to_fen()
         fen_board = fen_board + color
+        # print(f"is_red_at_bottom={is_red_at_bottom} fen_board={fen_board}")
         move = predict_best_move_and_score(fen_board)
+        # print(f"move={move}")
         try:
             x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
             return board.move_to_action(x1, y1, x2, y2)
         except Exception as e:
             if need_random:
-                return random.choice(list(board._red_legal_actions)) if board.is_red_at_bottom() else random.choice(list(board._black_legal_actions))
+                return random.choice(list(board._red_legal_actions)) if is_red_at_bottom else random.choice(list(board._black_legal_actions))
             else:
                 return -1
     

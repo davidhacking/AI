@@ -1,5 +1,6 @@
 import unittest
-from ChineseChessGame import ChineseChessBoard
+import random
+from ChineseChessGame import ChineseChessBoard, ChineseChessGame
 
 class TestChineseChessBoard(unittest.TestCase):
     def setUp(self):
@@ -96,6 +97,50 @@ class TestChineseChessBoard(unittest.TestCase):
         self.assertIn(board.move_to_action(4, 1, 5, 2), legal_moves)
         self.assertIn(board.move_to_action(4, 0, 3, 0), legal_moves)
         self.assertIn(board.move_to_action(4, 0, 5, 0), legal_moves)
+    
+    def test_p(self):
+        data = """
+0 . . . . . . . . . 
+1 . . . P a . . . . 
+2 . . . P b k . . . 
+3 . N . . . N . . . 
+4 . . b . . C . . . 
+5 . . . . . . . . . 
+6 . . . . . . . . . 
+7 . . . . B . . . . 
+8 . . n C A . . . . 
+9 . . . . K A B . . 
+"""
+        lines = data.strip().split('\n')
+        board = []
+        for line in lines:
+            row = line[2:].split()
+            board.append(row)
+        board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
+        legal_moves = board.get_legal_actions(ChineseChessBoard.BLACK)
+        self.assertIn(board.move_to_action(3, 1, 3, 0), legal_moves)
+    
+    def test_action(self):
+        rboard = ChineseChessBoard()
+        g = ChineseChessGame()
+        bboard = ChineseChessBoard(g.getCanonicalForm(rboard.board, -1))
+        rlegal_moves = rboard.get_legal_actions(ChineseChessBoard.RED)
+        a = random.choice(list(rlegal_moves))
+        rboard.takeAction(a, ChineseChessBoard.RED)
+        bboard.takeAction(a, ChineseChessBoard.BLACK)
+        bboard = ChineseChessBoard(g.getCanonicalForm(bboard.board, -1))
+        self.assertEqual(rboard.to_fen(), bboard.to_fen())
+
+    def test_action2(self):
+        bboard = ChineseChessBoard()
+        g = ChineseChessGame()
+        rboard = ChineseChessBoard(g.getCanonicalForm(bboard.board, -1))
+        blegal_moves = bboard.get_legal_actions(ChineseChessBoard.BLACK)
+        a = random.choice(list(blegal_moves))
+        bboard.takeAction(a, ChineseChessBoard.BLACK)
+        rboard.takeAction(a, ChineseChessBoard.RED)
+        rboard = ChineseChessBoard(g.getCanonicalForm(rboard.board, -1))
+        self.assertEqual(rboard.to_fen(), bboard.to_fen())
 
 
 if __name__ == '__main__':
