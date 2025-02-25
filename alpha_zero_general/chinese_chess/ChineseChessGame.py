@@ -15,7 +15,7 @@ def action_encode(piece_index, action_num):
     输出范围：0-607 (607种组合)
     """
     if not 0 <= piece_index <= 31:
-        raise ValueError("棋子索引需在0-32之间")
+        raise ValueError("棋子索引需在0-31之间")
     if not 0 <= action_num <= 18:
         raise ValueError("动作编号需在0-18之间")
     return piece_index * 19 + action_num
@@ -120,7 +120,8 @@ class ChineseChessBoard():
         planes = np.zeros(shape=(self.PIECE_NUM, self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.float32)
         for i in range(self.height):
             for j in range(self.width):
-                idx = self.board[i][j]
+                index = i * self.width + j
+                idx = int(self.board[index])
                 if idx != 0:
                     planes[idx-1][i][j] = 1
         return planes
@@ -178,6 +179,7 @@ class ChineseChessBoard():
         for j in range(self.width):
             col_numbers += f"{j:1d} "
         print(col_numbers)
+        print(f"turn_num={self.get_turn_num()}, lpctm={self.get_last_piece_capture_turn_num()}")
 
     @staticmethod
     def get_board_array(ch_board):
@@ -652,7 +654,6 @@ class ChineseChessGame():
         for a, p in enumerate(pi):
             if p == 0:
                 continue
-            a = a + 1
             m = board.action_to_move(a)
             d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
             m1 = (width - 1 - m[0], height - 1 - m[1])
@@ -660,14 +661,14 @@ class ChineseChessGame():
             # print(f"{m} -> {m1}")
             a1 = board_rotate180.move_to_action(*m1)
             assert a1 in board_rotate180._black_legal_actions or a1 in board_rotate180._red_legal_actions
-            pi_rotate180[a1-1] = pi[a-1]
+            pi_rotate180[a1] = pi[a]
             d2 = ((m[2] - m[0]), -1*(m[3] - m[1]))
             m2 = (m[0], height - 1 - m[1])
             m2 = (m2[0], m2[1], m2[0]+d2[0], m2[1]+d2[1])
             # print(f"{m} -> {m2}")
             a2 = board_mirror.move_to_action(*m2)
             assert a2 in board_mirror._black_legal_actions or a2 in board_mirror._red_legal_actions
-            pi_mirror[a2-1] = pi[a-1]
+            pi_mirror[a2] = pi[a]
         return [(board_np, pi), (board_rotate180_np, pi_rotate180), (board_mirror_np, pi_mirror)]
 
     def stringRepresentation(self, board):
