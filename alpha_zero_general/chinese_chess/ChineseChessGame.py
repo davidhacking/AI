@@ -323,7 +323,7 @@ class ChineseChessBoard():
         _legal_moves = []
         for y in range(self.height):
             for x in range(self.width):
-                ch = self[y, x][0]
+                ch = self[y, x]
                 if (color == ChineseChessBoard.RED and ch.isupper()):
                     continue
                 if (color == ChineseChessBoard.BLACK and ch.islower()):
@@ -392,7 +392,7 @@ class ChineseChessBoard():
                                     if y < 5:
                                         continue
                         elif ch != 'p' and ch != 'P': # for king and advisor
-                            if x_ < 3 or x_ > 5:
+                            if x_ < 3 or x_ > 5 or y_ < 0 or y_ > 9:
                                 continue
                             if ch == 'a':
                                 if board_flag:
@@ -417,8 +417,12 @@ class ChineseChessBoard():
                                         if y_ > 2:
                                             continue
                                 else:
-                                    if x_ != Kx or y_ != Ky:
-                                        continue
+                                    if board_flag:
+                                        if y_ < 7 and (x_ != Kx or y_ != Ky):
+                                            continue
+                                    else:
+                                        if y_ > 2 and (x_ != Kx or y_ != Ky):
+                                            continue
                             if ch == 'K':
                                 if has_block:
                                     if board_flag:
@@ -428,8 +432,12 @@ class ChineseChessBoard():
                                         if y_ < 7:
                                             continue
                                 else:
-                                    if x_ != kx or y_ != ky:
-                                        continue
+                                    if board_flag:
+                                        if y_ > 2 and (x_ != kx or y_ != ky):
+                                            continue
+                                    else:
+                                        if y_ < 7 and (x_ != kx or y_ != ky):
+                                            continue
                         _legal_moves.append((x, y, x_, y_))
                         
                 elif ch != '.': # for connon and root
@@ -627,7 +635,7 @@ class ChineseChessGame():
                             board as is. When the player is black, we can invert
                             the colors and return the board.
         """
-        if player == 1:
+        if player == ChineseChessBoard.RED:
             return board
 
         board = ChineseChessBoard(board)
