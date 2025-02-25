@@ -59,9 +59,12 @@ class Coach():
             temp = int(episodeStep < self.args.tempThreshold)
             ebsGreedyRate = self.args.ebsGreedyRate * (0.99 ** self.currentIteration)
             if random.random() < ebsGreedyRate:
-                action = self.game.getSearchAIAction(canonicalBoard, self.curPlayer)
-                pi = np.zeros(self.game.getActionSize())
-                pi[action] = 1
+                action = self.game.getSearchAIAction(canonicalBoard)
+                if action != -1:
+                    pi = np.zeros(self.game.getActionSize())
+                    pi[action] = 1
+                else:
+                    pi = mcts.getActionProb(canonicalBoard, temp=temp)
             else:
                 pi = mcts.getActionProb(canonicalBoard, temp=temp)                
             sym = self.game.getSymmetries(canonicalBoard, pi)

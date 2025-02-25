@@ -91,6 +91,7 @@ $$
 
 ## TODO
 - 棋盘board加入当前行动玩家 当前进行轮次数 上一次吃子轮次数
+- action应该改成 x1 y1 x2 y2，这样不论是board还是canonicalBoard，同一个action的意义是一样的
 
 
 

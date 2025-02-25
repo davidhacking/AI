@@ -1,6 +1,6 @@
-from alpha_zero_general import Arena
-from alpha_zero_general.chinese_chess.ChineseChessGame import ChineseChessGame
-from alpha_zero_general.chinese_chess.ChineseChessPlayers import *
+import Arena
+from chinese_chess.ChineseChessGame import ChineseChessGame
+from chinese_chess.ChineseChessPlayers import *
 
 g = ChineseChessGame()
 
