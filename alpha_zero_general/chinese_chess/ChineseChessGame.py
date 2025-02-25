@@ -298,11 +298,28 @@ class ChineseChessBoard():
         if ky >= 0 and ky <= 2:
             board_flag = False # 红棋位于棋盘上方方
         return board_flag
+    
+    def has_block_in_kings(self):
+        kx, ky = self.k_point
+        Kx, Ky = self.K_point
+        if kx != Kx:
+            return True
+        has_block = False
+        i = min(Ky, ky) + 1
+        while i < max(ky, Ky):
+            if self[i, kx] != '.':
+                has_block = True
+                break
+            i += 1
+        return has_block
 
     def _init_legal_moves(self, color): # 先判断老将的位置，如果没有老将直接返回空，按老将的位置判定小兵活动范围
         if self.k_point is None or self.K_point is None:
             return []
+        kx, ky = self.k_point
+        Kx, Ky = self.K_point
         board_flag = self.is_red_at_bottom()
+        has_block = self.has_block_in_kings()
         _legal_moves = []
         for y in range(self.height):
             for x in range(self.width):
@@ -377,29 +394,44 @@ class ChineseChessBoard():
                         elif ch != 'p' and ch != 'P': # for king and advisor
                             if x_ < 3 or x_ > 5:
                                 continue
-                            if (ch == 'k' or ch == 'a'):
+                            if ch == 'a':
                                 if board_flag:
                                     if y_ < 7:
                                         continue
                                 else:
                                     if y_ > 2:
                                         continue
-                            if (ch == 'K' or ch == 'A'):
+                            if ch == 'A':
                                 if board_flag:
                                     if y_ > 2:
                                         continue
                                 else:
                                     if y_ < 7:
+                                        continue
+                            if ch == 'k':
+                                if has_block:
+                                    if board_flag:
+                                        if y_ < 7:
+                                            continue
+                                    else:
+                                        if y_ > 2:
+                                            continue
+                                else:
+                                    if x_ != Kx or y_ != Ky:
+                                        continue
+                            if ch == 'K':
+                                if has_block:
+                                    if board_flag:
+                                        if y_ > 2:
+                                            continue
+                                    else:
+                                        if y_ < 7:
+                                            continue
+                                else:
+                                    if x_ != kx or y_ != ky:
                                         continue
                         _legal_moves.append((x, y, x_, y_))
-                        if (ch == 'k' and color == ChineseChessBoard.RED): #for King to King check
-                            d, u = self._y_board_from(x, y)
-                            if (u < self.height and self[u, x] == 'K'):
-                                _legal_moves.append((x, y, x, u))
-                        elif (ch == 'K' and color == ChineseChessBoard.BLACK):
-                            d, u = self._y_board_from(x, y)
-                            if (d > -1 and self[d, x] == 'k'):
-                                _legal_moves.append((x, y, x, d))
+                        
                 elif ch != '.': # for connon and root
                     l,r = self._x_board_from(x,y)
                     d,u = self._y_board_from(x,y)
@@ -704,16 +736,16 @@ class ChineseChessGame():
     
 if __name__ == "__main__":
     board = [
-        ['.', 'N', 'B', 'K', '.', 'A', '.', '.', 'R'],
-        ['.', '.', '.', '.', 'A', '.', '.', '.', '.'],
-        ['.', '.', '.', '.', 'B', '.', 'N', '.', '.'],
-        ['.', '.', '.', '.', '.', 'r', '.', '.', '.'],
-        ['.', 'R', 'p', '.', '.', '.', '.', 'c', 'P'],
-        ['.', '.', '.', '.', '.', 'C', 'b', '.', '.'],
-        ['P', '.', '.', '.', '.', '.', 'n', '.', 'p'],
-        ['c', '.', '.', '.', 'b', '.', '.', '.', '.'],
-        ['.', '.', '.', 'n', 'a', '.', '.', '.', '.'],
-        ['.', '.', '.', '.', 'k', 'a', '.', '.', '.']
+        ['R', 'N', 'B', 'A', 'K', 'A', 'B', 'N', 'R'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', 'C', '.', '.', '.', '.', '.', 'C', '.'],
+        ['P', '.', 'P', '.', 'P', '.', 'P', '.', 'P'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['p', '.', 'p', '.', 'p', '.', 'p', '.', 'p'],
+        ['.', 'c', '.', '.', '.', '.', '.', 'c', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['r', 'n', 'b', 'a', 'k', 'a', 'b', 'n', 'r']
     ]
     board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
     board.print_board()
