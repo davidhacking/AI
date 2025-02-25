@@ -63,6 +63,8 @@ class ModelConfig:
         self.res_layer_num = 10
         self.l2_reg = 1e-4
         self.value_fc_size = 256
+        self.policy_channels = 19
+        self.value_channels = 2
 
 class ResidualBlock(nn.Module):
     def __init__(self, mc):
@@ -88,7 +90,8 @@ class CChessModel(nn.Module):
         super(CChessModel, self).__init__()
         self.piece_num, self.board_x, self.board_y = game.getBoardSize()
         self.model_config = ModelConfig()
-        mc = self.model_config
+        self.mc = self.model_config
+        mc = self.mc
         self.n_labels = game.getActionSize()
         # 输入层
         self.input_conv = nn.Conv2d(self.piece_num, mc.cnn_filter_num, kernel_size=mc.cnn_first_filter_size, padding=mc.cnn_first_filter_size // 2)
@@ -97,14 +100,14 @@ class CChessModel(nn.Module):
         self.residual_blocks = nn.ModuleList([self._build_residual_block(mc) for _ in range(mc.res_layer_num)])
 
         # 策略输出层
-        self.policy_conv = nn.Conv2d(mc.cnn_filter_num, 4, kernel_size=1)
-        self.policy_bn = nn.BatchNorm2d(4)
-        self.policy_fc = nn.Linear(4 * self.board_y * self.board_x, self.n_labels)
+        self.policy_conv = nn.Conv2d(mc.cnn_filter_num, mc.policy_channels, kernel_size=1)
+        self.policy_bn = nn.BatchNorm2d(mc.policy_channels)
+        self.policy_fc = nn.Linear(mc.policy_channels * self.board_y * self.board_x, self.n_labels)
 
         # 价值输出层
-        self.value_conv = nn.Conv2d(mc.cnn_filter_num, 2, kernel_size=1)
-        self.value_bn = nn.BatchNorm2d(2)
-        self.value_fc1 = nn.Linear(2 * self.board_y * self.board_x, mc.value_fc_size)
+        self.value_conv = nn.Conv2d(mc.cnn_filter_num, mc.value_channels, kernel_size=1)
+        self.value_bn = nn.BatchNorm2d(mc.value_channels)
+        self.value_fc1 = nn.Linear(mc.value_channels * self.board_y * self.board_x, mc.value_fc_size)
         self.value_fc2 = nn.Linear(mc.value_fc_size, 1)
 
     def forward(self, x):
@@ -123,7 +126,7 @@ class CChessModel(nn.Module):
         policy = self.policy_conv(res_out)
         policy = self.policy_bn(policy)
         policy = F.relu(policy)
-        policy = policy.view(-1, 4 * self.board_y * self.board_x)
+        policy = policy.view(-1, self.mc.policy_channels * self.board_y * self.board_x)
         policy = self.policy_fc(policy)
         policy = F.log_softmax(policy, dim=1)
 
@@ -131,7 +134,7 @@ class CChessModel(nn.Module):
         value = self.value_conv(res_out)
         value = self.value_bn(value)
         value = F.relu(value)
-        value = value.view(-1, 2 * self.board_y * self.board_x)
+        value = value.view(-1, self.mc.value_channels * self.board_y * self.board_x)
         value = self.value_fc1(value)
         value = F.relu(value)
         value = self.value_fc2(value)

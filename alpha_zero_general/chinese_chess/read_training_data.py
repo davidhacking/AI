@@ -3,7 +3,7 @@ import numpy as np
 from ChineseChessGame import ChineseChessBoard, ChineseChessGame
 
 if __name__ == '__main__':
-    with open(r'/workspace/alpha_zero/chinese_chess_models/checkpoint_1.pth.tar.examples', "rb") as f:
+    with open(r'/workspace/alpha_zero/chinese_chess_models/checkpoint_0.pth.tar.examples', "rb") as f:
         trainExamplesHistory = Unpickler(f).load()
         for examples in trainExamplesHistory:
             for index, item in enumerate(examples):
@@ -23,6 +23,6 @@ if __name__ == '__main__':
                     if pi == 0:
                         continue
                     k += 1
-                    m = board.action_to_move(i+1)
+                    m = board.action_to_move(i)
                     print(f"{k}. {i+1} {m}: {pi}")
                 input("enter...")
