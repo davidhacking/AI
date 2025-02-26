@@ -13,7 +13,7 @@ from NeuralNet import NeuralNet
 import torch
 import torch.optim as optim
 
-from .ChineseChessNNet import CChessModel as nnet
+from .ChineseChessNNet import ChineseChessNNet as nnet
 
 args = dotdict({
     'lr': 0.001,
