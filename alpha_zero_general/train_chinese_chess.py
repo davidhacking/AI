@@ -30,6 +30,7 @@ args = dotdict({
     'load_folder_file': ('./chinese_chess_models','checkpoint_2.pth.tar'),
     'load_examples_folder_file': ('./chinese_chess_models','checkpoint_2.pth.tar'),
     'numItersForTrainExamplesHistory': 20,
+    'max_mcts_depth': 500,
 })
 
 

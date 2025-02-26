@@ -4,7 +4,7 @@ import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 240
+MaximumTurnsWithoutPieceCapture = 480
 
 def action_encode(piece_index, action_num):
     """
