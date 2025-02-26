@@ -74,7 +74,7 @@ class MCTS():
 
         s = self.game.stringRepresentation(canonicalBoard)
 
-        if s not in self.Es:
+        if s not in self.Es or self.Es[s] == 0:
             self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
         if self.Es[s] != 0:
             # terminal node
