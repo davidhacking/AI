@@ -165,12 +165,12 @@ class ChineseChessBoard():
         self.board[self.height*self.width+1] = value
 
     def get_winner(self, color):
+        if self.K_point is None:
+            # print(f"no black king red win")
+            return Winner.red
         if self.k_point is None:
             # print(f"no red king black win")
             return Winner.black
-        elif self.K_point is None:
-            # print(f"no black king red win")
-            return Winner.red
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
             # 和棋黑胜
