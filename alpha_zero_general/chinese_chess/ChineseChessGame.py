@@ -677,7 +677,7 @@ class ChineseChessGame():
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
         board_np = board.fen_to_planes()
-        return [(board_np, pi)]
+        # return [(board_np, pi)]
         def rotate_180(board):
             height = board.BOARD_HEIGHT
             width = board.BOARD_WIDTH
