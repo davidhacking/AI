@@ -18,7 +18,7 @@ args = dotdict({
     'tempThreshold': 15,
     'numProcesses': 16,
     'minmaxIterations': 150,        #
-    'ebsGreedyRate': 0.0,
+    'ebsGreedyRate': 0.8,
     'updateThreshold': 0.55,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 25,          # Number of games moves for MCTS to simulate.

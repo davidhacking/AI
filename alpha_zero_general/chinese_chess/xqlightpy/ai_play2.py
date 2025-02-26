@@ -21,7 +21,7 @@ def predict_best_move_and_score(fen):
     pos = Position()
     pos.fromFen(fen)
     searcher = Search(pos, 16)
-    mov = searcher.searchMain(3, 500)
+    mov = searcher.searchMain(4, 600)
     return move2pos(mov)
 
 # 示例用法
