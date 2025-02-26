@@ -173,9 +173,7 @@ class ChineseChessBoard():
             return Winner.black
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
-            # 和棋黑胜
-            # print(f"draw return black win")
-            return Winner.black
+            return Winner.draw
         return None
 
     def print_board(self):
@@ -624,6 +622,10 @@ class ChineseChessGame():
     def getGameEnded(self, board, player):
         board = ChineseChessBoard(board)
         winner = board.get_winner(player)
+        if winner is None:
+            return 0
+        if winner == Winner.draw:
+            return 0.000001
         if player == ChineseChessBoard.RED:
             if winner == Winner.red:
                 return 1
