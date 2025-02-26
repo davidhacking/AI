@@ -625,7 +625,7 @@ class ChineseChessGame():
         if winner is None:
             return 0
         if winner == Winner.draw:
-            return 0.000001
+            return 1e-4
         if player == ChineseChessBoard.RED:
             if winner == Winner.red:
                 return 1
