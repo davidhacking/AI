@@ -125,6 +125,17 @@ class ChineseChessBoard():
                 if idx != 0:
                     planes[idx-1][i][j] = 1
         return planes
+    
+    @staticmethod
+    def from_planes(b):
+        is_all_zero = np.all(b == 0, axis=0)
+        b = np.where(is_all_zero, -1, np.argmax(b, axis=0))
+        board = ChineseChessBoard()
+        for i in range(10):
+            for j in range(9):
+                board[i, j] = '.' if b[i][j] == -1 else ChineseChessBoard.Idx_2_Fen[b[i][j]]
+        board = ChineseChessBoard(board.board)
+        return board
 
     def __getitem__(self, index):
         i, j = index
@@ -570,7 +581,7 @@ class ChineseChessGame():
         return ChineseChessBoard().board
     
     def getBoardSize(self):
-        return (ChineseChessBoard.PIECE_NUM, self.board.width, self.board.height)
+        return (ChineseChessBoard.PIECE_NUM, self.board.height, self.board.width)
 
     def getActionSize(self):
         return ChineseChessBoard.action_size

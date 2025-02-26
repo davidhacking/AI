@@ -128,7 +128,6 @@ class CChessModel(nn.Module):
         policy = F.relu(policy)
         policy = policy.view(-1, self.mc.policy_channels * self.board_y * self.board_x)
         policy = self.policy_fc(policy)
-        policy = F.log_softmax(policy, dim=1)
 
         # 价值输出
         value = self.value_conv(res_out)

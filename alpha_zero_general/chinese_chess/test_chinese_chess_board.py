@@ -1,5 +1,6 @@
 import unittest
 import random
+import numpy as np
 from ChineseChessGame import ChineseChessBoard, ChineseChessGame
 
 class TestChineseChessBoard(unittest.TestCase):
@@ -141,6 +142,14 @@ class TestChineseChessBoard(unittest.TestCase):
         rboard.takeAction(a, ChineseChessBoard.RED)
         rboard = ChineseChessBoard(g.getCanonicalForm(rboard.board, -1))
         self.assertEqual(rboard.to_fen(), bboard.to_fen())
+    
+    def test_planes(self):
+        board = ChineseChessBoard()
+        b = board.fen_to_planes()
+        board2 = ChineseChessBoard.from_planes(b)
+        b2 = board2.fen_to_planes()
+        self.assertEqual(True, np.array_equal(b, b2))
+
 
 
 if __name__ == '__main__':

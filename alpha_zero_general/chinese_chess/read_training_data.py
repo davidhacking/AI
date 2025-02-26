@@ -8,13 +8,7 @@ if __name__ == '__main__':
         for examples in trainExamplesHistory:
             for index, item in enumerate(examples):
                 b, p, r = item
-                is_all_zero = np.all(b == 0, axis=0)
-                b = np.where(is_all_zero, -1, np.argmax(b, axis=0))
-                board = ChineseChessBoard()
-                for i in range(10):
-                    for j in range(9):
-                        board[i, j] = '.' if b[i][j] == -1 else ChineseChessBoard.Idx_2_Fen[b[i][j]]
-                board = ChineseChessBoard(board.board)
+                board = ChineseChessBoard.from_planes(b)
                 print("==============================")
                 print(f"index={index}, r={r}")
                 board.print_board()
