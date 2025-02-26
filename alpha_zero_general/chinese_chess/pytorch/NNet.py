@@ -13,9 +13,7 @@ from NeuralNet import NeuralNet
 import torch
 import torch.optim as optim
 
-from .ChineseChessNNet import CChessModel as ccnet
-import torch.nn as nn
-import torch.nn.functional as F
+from .ChineseChessNNet import CChessModel as nnet
 
 args = dotdict({
     'lr': 0.001,
@@ -28,13 +26,15 @@ args = dotdict({
 
 
 class NNetWrapper(NeuralNet):
+
     _lock = mp.Lock()
+
     def __init__(self, game):
-        self.nnet = ccnet(game, args)
+        self.nnet = nnet(game, args)
         self.game = game
         self.piece_num, self.board_h, self.board_w = game.getBoardSize()
         self.action_size = game.getActionSize()
-        self.criterion = nn.CrossEntropyLoss()
+
         if args.cuda:
             self.nnet.cuda()
 
@@ -96,14 +96,12 @@ class NNetWrapper(NeuralNet):
             self.nnet.eval()
             with torch.no_grad():
                 pi, v = self.nnet(board)
-                policy_probs = F.softmax(pi, dim=1).squeeze().cpu().numpy()
-                value = v.squeeze().cpu().numpy()
 
             # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
-            return policy_probs, value
+            return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
-        return self.criterion(targets, outputs)
+        return -torch.sum(targets * outputs) / targets.size()[0]
 
     def loss_v(self, targets, outputs):
         return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]

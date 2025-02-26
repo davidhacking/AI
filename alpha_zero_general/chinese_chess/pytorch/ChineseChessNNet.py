@@ -63,7 +63,7 @@ class ModelConfig:
         self.res_layer_num = 10
         self.l2_reg = 1e-4
         self.value_fc_size = 256
-        self.policy_channels = 19
+        self.policy_channels = 4
         self.value_channels = 2
 
 class ResidualBlock(nn.Module):
@@ -128,6 +128,7 @@ class CChessModel(nn.Module):
         policy = F.relu(policy)
         policy = policy.view(-1, self.mc.policy_channels * self.board_y * self.board_x)
         policy = self.policy_fc(policy)
+        policy = F.log_softmax(policy, dim=1)
 
         # 价值输出
         value = self.value_conv(res_out)
