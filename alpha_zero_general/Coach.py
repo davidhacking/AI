@@ -13,6 +13,7 @@ from MCTS import MCTS
 import multiprocessing
 from functools import partial
 import time
+from NNetPlayer import parallelPlayGames
 
 log = logging.getLogger(__name__)
 
@@ -81,8 +82,7 @@ class Coach():
             r = self.game.getGameEnded(board, self.curPlayer)
             example_size = len(trainExamples)
             if r != 0:
-                return [(x[0], x[2], 
-                         (0.99**(example_size - i)) * (r if x[1] == self.curPlayer else -r)) 
+                return [(x[0], x[2], r if x[1] == self.curPlayer else -r)
                         for i, x in enumerate(trainExamples)]
 
     def execute_episode_wrapper(self, _):
@@ -156,12 +156,10 @@ class Coach():
             pmcts = MCTS(self.game, self.pnet, self.args)
 
             self.nnet.train(trainExamples)
-            nmcts = MCTS(self.game, self.nnet, self.args)
-
-            log.info('PITTING AGAINST PREVIOUS VERSION')
-            arena = Arena(lambda x: np.argmax(pmcts.getActionProb(x, temp=0)),
-                          lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
-            pwins, nwins, draws = arena.playGames(self.args.arenaCompare)
+            self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='new.pth.tar')
+            
+            pwins, nwins, draws = parallelPlayGames(40, self.args.checkpoint, 'temp.pth.tar', 
+                                                    self.args.checkpoint, 'new.pth.tar', 10)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
             if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:

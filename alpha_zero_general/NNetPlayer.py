@@ -88,7 +88,7 @@ def parallelPlayGames(num, model_path1, model_file1, model_path2, model_file2, n
     ctx = multiprocessing.get_context('spawn')
     with ctx.Pool(num_processes) as pool:
         args = [(chunk, chunk, model_path1, model_file1, model_path2, model_file2)] * num_processes
-        results = list(tqdm(pool.imap(worker, args), total=num_processes, desc="并行对局"))
+        results = list(tqdm(pool.imap(worker, args), total=num_processes, desc="MODEL PITTING"))
     
     total_oneWon = sum(r[0] for r in results)
     total_twoWon = sum(r[1] for r in results)

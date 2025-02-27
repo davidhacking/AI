@@ -19,4 +19,5 @@ if __name__ == '__main__':
                     k += 1
                     m = board.action_to_move(i)
                     print(f"{k}. {i+1} {m}: {pi}")
+                print(sum(p))
                 input("enter...")

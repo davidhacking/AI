@@ -63,92 +63,61 @@ class ChineseChessNNet(nn.Module):
 
         return F.log_softmax(pi, dim=1), torch.tanh(v)
 
-class ModelConfig:
-    def __init__(self):
-        self.cnn_filter_num = 192
-        self.cnn_first_filter_size = 5
-        self.cnn_filter_size = 3
-        self.res_layer_num = 10
-        self.l2_reg = 1e-4
-        self.value_fc_size = 256
-        self.policy_channels = 4
-        self.value_channels = 2
 
-class ResidualBlock(nn.Module):
-    def __init__(self, mc):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(mc.cnn_filter_num, mc.cnn_filter_num, kernel_size=mc.cnn_filter_size, padding=mc.cnn_filter_size // 2)
-        self.bn1 = nn.BatchNorm2d(mc.cnn_filter_num)
-        self.conv2 = nn.Conv2d(mc.cnn_filter_num, mc.cnn_filter_num, kernel_size=mc.cnn_filter_size, padding=mc.cnn_filter_size // 2)
-        self.bn2 = nn.BatchNorm2d(mc.cnn_filter_num)
+class AlphaZeroNet(nn.Module):
+    def __init__(self, input_channels=14, res_layers=10, filters=256, policy_shape=608):
+        super().__init__()
+        # 初始卷积层
+        self.conv = nn.Sequential(
+            nn.Conv2d(input_channels, filters, 3, padding=1, bias=False),
+            nn.BatchNorm2d(filters),
+            nn.ReLU(inplace=True)
+        )
+        
+        # 残差块
+        self.res_blocks = nn.ModuleList([
+            nn.Sequential(
+                nn.Conv2d(filters, filters, 3, padding=1, bias=False),
+                nn.BatchNorm2d(filters),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(filters, filters, 3, padding=1, bias=False),
+                nn.BatchNorm2d(filters)
+            ) for _ in range(res_layers)
+        ])
+        
+        # 策略头
+        self.policy_head = nn.Sequential(
+            nn.Conv2d(filters, 4, 1, bias=False),
+            nn.BatchNorm2d(4),
+            nn.ReLU(inplace=True),
+            nn.Flatten(),
+            nn.Linear(4*10*9, policy_shape)
+        )
+        
+        # 价值头
+        self.value_head = nn.Sequential(
+            nn.Conv2d(filters, 2, 1, bias=False),
+            nn.BatchNorm2d(2),
+            nn.ReLU(inplace=True),
+            nn.Flatten(),
+            nn.Linear(2*10*9, 256),
+            nn.ReLU(inplace=True),
+            nn.Linear(256, 1),
+            nn.Tanh()
+        )
+        # for m in self.modules():
+        #     if isinstance(m, nn.Conv2d):
+        #         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
-        in_x = x
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = x + in_x
-        x = F.relu(x)
-        return x
-
-class CChessModel(nn.Module):
-    def __init__(self, game, args):
-        super(CChessModel, self).__init__()
-        self.piece_num, self.board_x, self.board_y = game.getBoardSize()
-        self.model_config = ModelConfig()
-        self.mc = self.model_config
-        mc = self.mc
-        self.n_labels = game.getActionSize()
-        # 输入层
-        self.input_conv = nn.Conv2d(self.piece_num, mc.cnn_filter_num, kernel_size=mc.cnn_first_filter_size, padding=mc.cnn_first_filter_size // 2)
-        self.input_bn = nn.BatchNorm2d(mc.cnn_filter_num)
-        # 残差块
-        self.residual_blocks = nn.ModuleList([self._build_residual_block(mc) for _ in range(mc.res_layer_num)])
-
-        # 策略输出层
-        self.policy_conv = nn.Conv2d(mc.cnn_filter_num, mc.policy_channels, kernel_size=1)
-        self.policy_bn = nn.BatchNorm2d(mc.policy_channels)
-        self.policy_fc = nn.Linear(mc.policy_channels * self.board_y * self.board_x, self.n_labels)
-
-        # 价值输出层
-        self.value_conv = nn.Conv2d(mc.cnn_filter_num, mc.value_channels, kernel_size=1)
-        self.value_bn = nn.BatchNorm2d(mc.value_channels)
-        self.value_fc1 = nn.Linear(mc.value_channels * self.board_y * self.board_x, mc.value_fc_size)
-        self.value_fc2 = nn.Linear(mc.value_fc_size, 1)
-
-    def forward(self, x):
-        # 输入层
-        x = self.input_conv(x)
-        x = self.input_bn(x)
-        x = F.relu(x)
-
-        # 残差块
-        for block in self.residual_blocks:
+        x = self.conv(x)
+        for block in self.res_blocks:
+            residual = x
             x = block(x)
-
-        res_out = x
-
-        # 策略输出
-        policy = self.policy_conv(res_out)
-        policy = self.policy_bn(policy)
-        policy = F.relu(policy)
-        policy = policy.view(-1, self.mc.policy_channels * self.board_y * self.board_x)
-        policy = self.policy_fc(policy)
-        policy = F.log_softmax(policy, dim=1)
-
-        # 价值输出
-        value = self.value_conv(res_out)
-        value = self.value_bn(value)
-        value = F.relu(value)
-        value = value.view(-1, self.mc.value_channels * self.board_y * self.board_x)
-        value = self.value_fc1(value)
-        value = F.relu(value)
-        value = self.value_fc2(value)
-        value = torch.tanh(value)
-
+            x += residual
+            x = F.relu(x)
+        
+        policy = self.policy_head(x)
+        value = self.value_head(x)
         return policy, value
 
-    def _build_residual_block(self, mc):
-        return ResidualBlock(mc)
