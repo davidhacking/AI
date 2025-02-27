@@ -183,7 +183,8 @@ class NNetWrapper:
                 # record loss
                 pi_losses.update(l_pi.item(), boards.size(0))
                 v_losses.update(l_v.item(), boards.size(0))
-                t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses, Loss_l2=l2_loss)
+                # t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses, Loss_l2=l2_loss)
+                t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses)
 
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
