@@ -612,7 +612,7 @@ class ChineseChessGame():
                         moves that are valid from the current board and player,
                         0 for invalid moves
         """
-        valid_moves = [0] * self.getActionSize()
+        valid_moves = [0 for _ in range(self.getActionSize())]
         board = ChineseChessBoard(board)
         actions = board.get_legal_actions(player)
         for a in actions:

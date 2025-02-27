@@ -149,7 +149,14 @@ class TestChineseChessBoard(unittest.TestCase):
         board2 = ChineseChessBoard.from_planes(b)
         b2 = board2.fen_to_planes()
         self.assertEqual(True, np.array_equal(b, b2))
-
+        
+    def test_symmetris(self):
+        board = ChineseChessBoard()
+        g = ChineseChessGame()
+        pi = g.getValidMoves(board, 1)
+        bs = g.getSymmetries(board, pi)
+        self.assertEqual(3, len(bs))
+        
 
 
 if __name__ == '__main__':
