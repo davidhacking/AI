@@ -4,7 +4,7 @@ import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 640
+MaximumTurnsWithoutPieceCapture = 120
 
 def action_encode(piece_index, action_num):
     """
@@ -12,7 +12,7 @@ def action_encode(piece_index, action_num):
     参数范围：
     - piece_index: 0-31 (32种可能)
     - action_num: 0-18 (19种可能)
-    输出范围：0-607 (607种组合)
+    输出范围：0-607 (608种组合)
     """
     if not 0 <= piece_index <= 31:
         raise ValueError("棋子索引需在0-31之间")
@@ -125,6 +125,17 @@ class ChineseChessBoard():
                 if idx != 0:
                     planes[idx-1][i][j] = 1
         return planes
+    
+    @staticmethod
+    def from_planes(b):
+        is_all_zero = np.all(b == 0, axis=0)
+        b = np.where(is_all_zero, -1, np.argmax(b, axis=0))
+        board = ChineseChessBoard()
+        for i in range(10):
+            for j in range(9):
+                board[i, j] = '.' if b[i][j] == -1 else ChineseChessBoard.Idx_2_Fen[b[i][j]]
+        board = ChineseChessBoard(board.board)
+        return board
 
     def __getitem__(self, index):
         i, j = index
@@ -154,17 +165,15 @@ class ChineseChessBoard():
         self.board[self.height*self.width+1] = value
 
     def get_winner(self, color):
+        if self.K_point is None:
+            # print(f"no black king red win")
+            return Winner.red
         if self.k_point is None:
             # print(f"no red king black win")
             return Winner.black
-        elif self.K_point is None:
-            # print(f"no black king red win")
-            return Winner.red
         t = self.get_turn_num() - self.get_last_piece_capture_turn_num()
         if t > MaximumTurnsWithoutPieceCapture:
-            # 和棋黑胜
-            # print(f"draw return black win")
-            return Winner.black
+            return Winner.draw
         return None
 
     def print_board(self):
@@ -179,7 +188,7 @@ class ChineseChessBoard():
         for j in range(self.width):
             col_numbers += f"{j:1d} "
         print(col_numbers)
-        print(f"turn_num={self.get_turn_num()}, lpctm={self.get_last_piece_capture_turn_num()}")
+        print(f"turn_num={self.get_turn_num()}, lpctn={self.get_last_piece_capture_turn_num()}")
 
     @staticmethod
     def get_board_array(ch_board):
@@ -298,15 +307,32 @@ class ChineseChessBoard():
         if ky >= 0 and ky <= 2:
             board_flag = False # 红棋位于棋盘上方方
         return board_flag
+    
+    def has_block_in_kings(self):
+        kx, ky = self.k_point
+        Kx, Ky = self.K_point
+        if kx != Kx:
+            return True
+        has_block = False
+        i = min(Ky, ky) + 1
+        while i < max(ky, Ky):
+            if self[i, kx] != '.':
+                has_block = True
+                break
+            i += 1
+        return has_block
 
     def _init_legal_moves(self, color): # 先判断老将的位置，如果没有老将直接返回空，按老将的位置判定小兵活动范围
         if self.k_point is None or self.K_point is None:
             return []
+        kx, ky = self.k_point
+        Kx, Ky = self.K_point
         board_flag = self.is_red_at_bottom()
+        has_block = self.has_block_in_kings()
         _legal_moves = []
         for y in range(self.height):
             for x in range(self.width):
-                ch = self[y, x][0]
+                ch = self[y, x]
                 if (color == ChineseChessBoard.RED and ch.isupper()):
                     continue
                 if (color == ChineseChessBoard.BLACK and ch.islower()):
@@ -375,31 +401,54 @@ class ChineseChessBoard():
                                     if y < 5:
                                         continue
                         elif ch != 'p' and ch != 'P': # for king and advisor
-                            if x_ < 3 or x_ > 5:
+                            if x_ < 3 or x_ > 5 or y_ < 0 or y_ > 9:
                                 continue
-                            if (ch == 'k' or ch == 'a'):
+                            if ch == 'a':
                                 if board_flag:
                                     if y_ < 7:
                                         continue
                                 else:
                                     if y_ > 2:
                                         continue
-                            if (ch == 'K' or ch == 'A'):
+                            if ch == 'A':
                                 if board_flag:
                                     if y_ > 2:
                                         continue
                                 else:
                                     if y_ < 7:
                                         continue
+                            if ch == 'k':
+                                if has_block:
+                                    if board_flag:
+                                        if y_ < 7:
+                                            continue
+                                    else:
+                                        if y_ > 2:
+                                            continue
+                                else:
+                                    if board_flag:
+                                        if y_ < 7 and (x_ != Kx or y_ != Ky):
+                                            continue
+                                    else:
+                                        if y_ > 2 and (x_ != Kx or y_ != Ky):
+                                            continue
+                            if ch == 'K':
+                                if has_block:
+                                    if board_flag:
+                                        if y_ > 2:
+                                            continue
+                                    else:
+                                        if y_ < 7:
+                                            continue
+                                else:
+                                    if board_flag:
+                                        if y_ > 2 and (x_ != kx or y_ != ky):
+                                            continue
+                                    else:
+                                        if y_ < 7 and (x_ != kx or y_ != ky):
+                                            continue
                         _legal_moves.append((x, y, x_, y_))
-                        if (ch == 'k' and color == ChineseChessBoard.RED): #for King to King check
-                            d, u = self._y_board_from(x, y)
-                            if (u < self.height and self[u, x] == 'K'):
-                                _legal_moves.append((x, y, x, u))
-                        elif (ch == 'K' and color == ChineseChessBoard.BLACK):
-                            d, u = self._y_board_from(x, y)
-                            if (d > -1 and self[d, x] == 'k'):
-                                _legal_moves.append((x, y, x, d))
+                        
                 elif ch != '.': # for connon and root
                     l,r = self._x_board_from(x,y)
                     d,u = self._y_board_from(x,y)
@@ -502,23 +551,27 @@ class ChineseChessGame():
         board = ChineseChessBoard(board)
         if len(board._kill_K_moves) > 0:
             m = board._kill_K_moves[0]
-            print(f"board._kill_K_moves={board._kill_K_moves}")
+            # print(f"board._kill_K_moves={board._kill_K_moves}")
             return board.move_to_action(*m)
-        color = ' w' 
-        if not board.is_red_at_bottom():
+        is_red_at_bottom = board.is_red_at_bottom()
+        color = ' w'
+        if not is_red_at_bottom:
             color = ' b'
             board = self.getCanonicalForm(board.board, -1)
             board = ChineseChessBoard(board)
+        # board.print_board()
         from chinese_chess.xqlightpy.ai_play2 import predict_best_move_and_score
         fen_board = board.to_fen()
         fen_board = fen_board + color
+        # print(f"is_red_at_bottom={is_red_at_bottom} fen_board={fen_board}")
         move = predict_best_move_and_score(fen_board)
+        # print(f"move={move}")
         try:
             x1, y1, x2, y2 = int(move[0]), int(move[1]), int(move[2]), int(move[3])
             return board.move_to_action(x1, y1, x2, y2)
         except Exception as e:
             if need_random:
-                return random.choice(list(board._red_legal_actions)) if board.is_red_at_bottom() else random.choice(list(board._black_legal_actions))
+                return random.choice(list(board._red_legal_actions)) if is_red_at_bottom else random.choice(list(board._black_legal_actions))
             else:
                 return -1
     
@@ -526,7 +579,7 @@ class ChineseChessGame():
         return ChineseChessBoard().board
     
     def getBoardSize(self):
-        return (ChineseChessBoard.PIECE_NUM, self.board.width, self.board.height)
+        return (ChineseChessBoard.PIECE_NUM, self.board.height, self.board.width)
 
     def getActionSize(self):
         return ChineseChessBoard.action_size
@@ -559,7 +612,7 @@ class ChineseChessGame():
                         moves that are valid from the current board and player,
                         0 for invalid moves
         """
-        valid_moves = [0] * self.getActionSize()
+        valid_moves = [0 for _ in range(self.getActionSize())]
         board = ChineseChessBoard(board)
         actions = board.get_legal_actions(player)
         for a in actions:
@@ -569,6 +622,10 @@ class ChineseChessGame():
     def getGameEnded(self, board, player):
         board = ChineseChessBoard(board)
         winner = board.get_winner(player)
+        if winner is None:
+            return 0
+        if winner == Winner.draw:
+            return 1e-4
         if player == ChineseChessBoard.RED:
             if winner == Winner.red:
                 return 1
@@ -595,7 +652,7 @@ class ChineseChessGame():
                             board as is. When the player is black, we can invert
                             the colors and return the board.
         """
-        if player == 1:
+        if player == ChineseChessBoard.RED:
             return board
 
         board = ChineseChessBoard(board)
@@ -622,6 +679,7 @@ class ChineseChessGame():
         assert board.shape == (ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,)
         board = ChineseChessBoard(board)
         board_np = board.fen_to_planes()
+        # return [(board_np, pi)]
         def rotate_180(board):
             height = board.BOARD_HEIGHT
             width = board.BOARD_WIDTH
@@ -704,16 +762,16 @@ class ChineseChessGame():
     
 if __name__ == "__main__":
     board = [
-        ['.', 'N', 'B', 'K', '.', 'A', '.', '.', 'R'],
-        ['.', '.', '.', '.', 'A', '.', '.', '.', '.'],
-        ['.', '.', '.', '.', 'B', '.', 'N', '.', '.'],
-        ['.', '.', '.', '.', '.', 'r', '.', '.', '.'],
-        ['.', 'R', 'p', '.', '.', '.', '.', 'c', 'P'],
-        ['.', '.', '.', '.', '.', 'C', 'b', '.', '.'],
-        ['P', '.', '.', '.', '.', '.', 'n', '.', 'p'],
-        ['c', '.', '.', '.', 'b', '.', '.', '.', '.'],
-        ['.', '.', '.', 'n', 'a', '.', '.', '.', '.'],
-        ['.', '.', '.', '.', 'k', 'a', '.', '.', '.']
+        ['R', 'N', 'B', 'A', 'K', 'A', 'B', 'N', 'R'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', 'C', '.', '.', '.', '.', '.', 'C', '.'],
+        ['P', '.', 'P', '.', 'P', '.', 'P', '.', 'P'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['p', '.', 'p', '.', 'p', '.', 'p', '.', 'p'],
+        ['.', 'c', '.', '.', '.', '.', '.', 'c', '.'],
+        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+        ['r', 'n', 'b', 'a', 'k', 'a', 'b', 'n', 'r']
     ]
     board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
     board.print_board()

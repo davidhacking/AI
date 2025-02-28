@@ -13,6 +13,7 @@ from MCTS import MCTS
 import multiprocessing
 from functools import partial
 import time
+from NNetPlayer import parallelPlayGames
 
 log = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Coach():
         self.pnet = self.nnet.__class__(self.game)  # the competitor network
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
+        self.pretrain_state = False
 
     def executeEpisode(self):
         """
@@ -58,8 +60,11 @@ class Coach():
             canonicalBoard = self.game.getCanonicalForm(board, self.curPlayer)
             temp = int(episodeStep < self.args.tempThreshold)
             ebsGreedyRate = self.args.ebsGreedyRate * (0.99 ** self.currentIteration)
-            if random.random() < ebsGreedyRate:
-                action = self.game.getSearchAIAction(canonicalBoard)
+            if random.random() < ebsGreedyRate or self.pretrain_state:
+                need_random = False
+                if self.pretrain_state:
+                    need_random = True
+                action = self.game.getSearchAIAction(canonicalBoard, need_random)
                 if action != -1:
                     pi = np.zeros(self.game.getActionSize())
                     pi[action] = 1
@@ -75,9 +80,10 @@ class Coach():
             board, self.curPlayer = self.game.getNextState(board, self.curPlayer, action)
 
             r = self.game.getGameEnded(board, self.curPlayer)
-
+            example_size = len(trainExamples)
             if r != 0:
-                return [(x[0], x[2], r if x[1] == self.curPlayer else -r) for x in trainExamples]
+                return [(x[0], x[2], r if x[1] == self.curPlayer else -r)
+                        for i, x in enumerate(trainExamples)]
 
     def execute_episode_wrapper(self, _):
         return self.executeEpisode()
@@ -111,8 +117,9 @@ class Coach():
         for i in range(1, self.args.numIters + 1):
             start = time.time()
             self.currentIteration = i
+            self.pretrain_state = (i <= self.args.pretrainIters)
             # bookkeeping
-            log.info(f'Starting Iter #{i} ...')
+            log.info(f'Starting Iter #{i} pretrain_state={self.pretrain_state}...')
             # examples of the iteration
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
@@ -137,18 +144,22 @@ class Coach():
                 trainExamples.extend(e)
             shuffle(trainExamples)
 
+            if self.pretrain_state:
+                self.nnet.train(trainExamples)
+                self.nnet.save_checkpoint(folder=self.args.checkpoint, filename=f'pretrained_{i}.pth.tar')
+                log.info(f'model{i} pretrained')
+                continue
+
             # training new network, keeping a copy of the old one
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
             self.pnet.load_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
             pmcts = MCTS(self.game, self.pnet, self.args)
 
             self.nnet.train(trainExamples)
-            nmcts = MCTS(self.game, self.nnet, self.args)
-
-            log.info('PITTING AGAINST PREVIOUS VERSION')
-            arena = Arena(lambda x: np.argmax(pmcts.getActionProb(x, temp=0)),
-                          lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
-            pwins, nwins, draws = arena.playGames(self.args.arenaCompare)
+            self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='new.pth.tar')
+            
+            pwins, nwins, draws = parallelPlayGames(40, self.args.checkpoint, 'temp.pth.tar', 
+                                                    self.args.checkpoint, 'new.pth.tar', 10)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
             if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
