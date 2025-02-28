@@ -4,7 +4,7 @@ import random
 
 Winner = Enum("Winner", "red black draw")
 
-MaximumTurnsWithoutPieceCapture = 480
+MaximumTurnsWithoutPieceCapture = 120
 
 def action_encode(piece_index, action_num):
     """
@@ -12,7 +12,7 @@ def action_encode(piece_index, action_num):
     参数范围：
     - piece_index: 0-31 (32种可能)
     - action_num: 0-18 (19种可能)
-    输出范围：0-607 (607种组合)
+    输出范围：0-607 (608种组合)
     """
     if not 0 <= piece_index <= 31:
         raise ValueError("棋子索引需在0-31之间")

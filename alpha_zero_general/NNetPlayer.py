@@ -98,7 +98,7 @@ def parallelPlayGames(num, model_path1, model_file1, model_path2, model_file2, n
 
 if __name__ == "__main__":
     model_path = '/workspace/alpha_zero/chinese_chess_models/'
-    model1 = 'pretrained_3.pth.tar'
+    model1 = 'best.pth.tar'
     model2 = ''
     
     total_games = 20  # 需要是2*num_processes的整数倍
