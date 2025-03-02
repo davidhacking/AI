@@ -1,7 +1,7 @@
 import Arena
 from chinese_chess.ChineseChessGame import ChineseChessGame
 from chinese_chess.pytorch.NNet import NNetWrapper as NNet
-from MCTS import MCTS
+from MCTS2 import MCTS
 from utils import *
 import numpy as np
 
@@ -13,7 +13,7 @@ class NNetPlayer():
         n1 = NNet(game)
         if model_file:
             n1.load_checkpoint(model_path, model_file)
-        args1 = dotdict({'numMCTSSims': 150, 'cpuct':1.0, 'max_mcts_depth': 500})
+        args1 = dotdict({'numMCTSSims': 1000, 'cpuct':1.5, 'max_mcts_depth': 500})
         self.mcts = MCTS(game, n1, args1)
 
     def play(self, board):

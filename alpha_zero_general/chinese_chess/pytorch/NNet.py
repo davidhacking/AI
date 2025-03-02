@@ -154,7 +154,7 @@ class NNetWrapper:
     def train(self, examples):
         """训练函数，输入格式为[(board, pi, v)]"""
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001, weight_decay=self.l2_coef)
-        for epoch in range(10):
+        for epoch in range(40):
             print('EPOCH ::: ' + str(epoch + 1))
             self.model.train()
             pi_losses = AverageMeter()
