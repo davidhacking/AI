@@ -170,7 +170,7 @@ class Coach():
             self.nnet.train(trainExamples)
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='new.pth.tar')
             
-            pwins, nwins, draws = parallelPlayGames(40, self.args.checkpoint, 'temp.pth.tar', 
+            pwins, nwins, draws = parallelPlayGames(20, self.args.checkpoint, 'temp.pth.tar', 
                                                     self.args.checkpoint, 'new.pth.tar', 10)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
