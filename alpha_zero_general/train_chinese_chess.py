@@ -33,7 +33,7 @@ args = dotdict({
     'load_model': True,
     'load_train_examples': False,
     'load_folder_file': ('./chinese_chess_models','best.pth.tar'),
-    'load_examples_folder_file': ('./chinese_chess_models','checkpoint_1.pth.tar'),
+    'load_examples_folder_file': ('./chinese_chess_models','checkpoint_6.pth.tar'),
     'numItersForTrainExamplesHistory': 10, # 内存不够
     'max_mcts_depth': 500,
     'pretrainIters': 0,
