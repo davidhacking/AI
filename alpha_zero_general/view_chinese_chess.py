@@ -17,7 +17,7 @@ class NNetPlayer():
         self.mcts = MCTS(game, n1, args1)
 
     def play(self, board):
-        input("press enter to play")
+        # input("press enter to play")
         actions = self.mcts.getActionProb(board, temp=0)
         a = np.argmax(actions)
         move = self.game.action_to_move(board, a)

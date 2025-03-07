@@ -89,9 +89,11 @@ $$
   boards = torch.FloatTensor(np.array(boards).astype(np.float64))
   ```
 
-## TODO
-- 棋盘board加入当前行动玩家 当前进行轮次数 上一次吃子轮次数
-- action应该改成 x1 y1 x2 y2，这样不论是board还是canonicalBoard，同一个action的意义是一样的
+## 问题
+- mcts需要模拟1000次才能得到比较准确的局面评估的概率分布，这显然太慢了
+  - 基础大模型其实知道一切，能否对大模型进行微调，给大模型棋盘fen+promopt，输出最佳action
+  - 参考grpo算法
+    - 什么是PPO
 
 
 

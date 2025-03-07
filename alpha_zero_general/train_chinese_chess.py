@@ -31,7 +31,7 @@ args = dotdict({
     'cpuct': 1.5,
     'checkpoint': './chinese_chess_models/',
     'load_model': True,
-    'load_train_examples': True,
+    'load_train_examples': False,
     'load_folder_file': ('./chinese_chess_models','best.pth.tar'),
     'load_examples_folder_file': ('./chinese_chess_models','checkpoint_1.pth.tar'),
     'numItersForTrainExamplesHistory': 10, # 内存不够
