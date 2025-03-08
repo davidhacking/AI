@@ -1,9 +1,9 @@
 import numpy as np
 from enum import Enum
 import random
-import gym
+import gymnasium as gym
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 
 class ChineseChessEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -15,47 +15,53 @@ class ChineseChessEnv(gym.Env):
         # 定义观察空间和动作空间
         self.observation_space = spaces.Box(
             low=0, high=1,
-            shape=(ChineseChessBoard.PIECE_NUM, ChineseChessBoard.BOARD_HEIGHT, 
-                   ChineseChessBoard.BOARD_WIDTH),  # 14 x 10 x 9
+            shape=(ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,),  # 14 x 10 x 9
             dtype=np.float32
         )
         self.action_space = spaces.Discrete(ChineseChessBoard.action_size)  # 608
         
-        self.current_board = ChineseChessBoard().fen_to_planes()
+        self.current_board = ChineseChessBoard().board
 
-    def reset(self):
-        self.current_board = ChineseChessBoard().fen_to_planes()
-        return self._get_obs()
+    def get_action_mask(self):
+        """获取当前合法动作掩码"""
+        board = ChineseChessBoard(self.current_board)
+        legal_actions = board.get_legal_actions(ChineseChessBoard.RED)
+        mask = np.zeros(self.action_space.n, dtype=bool)
+        mask[list(legal_actions)] = True
+        return mask
+
+    def reset(self, seed=None, options=None):
+        self.current_board = ChineseChessBoard().board
+        return self._get_obs(), {}
 
     def step(self, action):
         # 玩家执行动作
-        board = ChineseChessBoard.from_planes(self.current_board)
+        board = ChineseChessBoard(self.current_board)
         s1 = board.takeAction(action, ChineseChessBoard.RED)
-        self.current_board = board.fen_to_planes()
+        self.current_board = board.board
         
         # 检查终止条件
-        done = ChineseChessBoard(board.board).get_winner() is not None
+        done = ChineseChessBoard(self.current_board).get_winner() is not None
         reward = s1
         
         if not done:
-            board.print_board()
             # 对手（模型）执行动作
             model_action = self._predict_opponent_action(self.current_board)
-            board = ChineseChessBoard(board.board)
+            board = ChineseChessBoard(self.current_board)
             s2 = board.takeAction(model_action, ChineseChessBoard.BLACK)
-            self.current_board = board.fen_to_planes()
+            self.current_board = board.board
             
             # 计算奖励
             reward -= s2
-            done = ChineseChessBoard(board.board).get_winner() is not None
+            done = ChineseChessBoard(self.current_board).get_winner() is not None
         
-        return self._get_obs(), reward, done, {}
+        return self._get_obs(), reward, done, False, {}
 
     def _get_obs(self):
         return self.current_board
 
     def _predict_opponent_action(self, board):
-        board = ChineseChessBoard.from_planes(board)
+        board = ChineseChessBoard(board)
         for i in range(ChineseChessBoard.BOARD_HEIGHT):
             for j in range(ChineseChessBoard.BOARD_WIDTH):
                 piece = board[i, j]
@@ -72,7 +78,11 @@ class ChineseChessEnv(gym.Env):
         board_rotate180 = rotate_180(board)
         if self.model:
             # 使用模型预测动作的逻辑
-            action, _ = self.model.predict(board_rotate180.fen_to_planes())
+            legal_actions = board_rotate180.get_legal_actions(ChineseChessBoard.RED)
+            mask = np.zeros(self.action_space.n, dtype=np.int8)
+            mask[list(legal_actions)] = 1
+            action, _ = self.model.predict(board_rotate180.fen_to_planes(), 
+                action_masks=mask, deterministic=True)
             action = np.argmax(action)
         else:
             # 随机选择作为基线
@@ -88,7 +98,7 @@ class ChineseChessEnv(gym.Env):
         return action
 
     def render(self, mode='human'):
-        board = ChineseChessBoard.from_planes(self.current_board)
+        board = ChineseChessBoard(self.current_board)
         board.print_board()
 
     def close(self):
@@ -873,14 +883,14 @@ class ChineseChessGame():
     
 if __name__ == "__main__":
     env = ChineseChessEnv()
-    obs = env.reset()
+    obs, _ = env.reset()
     done = False
     game = ChineseChessGame()
     env.render()
     # 随机对战测试循环
     while not done:  # 最多运行100步防止无限循环
         # 获取合法动作
-        valid_moves = game.getValidMoves(ChineseChessBoard.from_planes(obs).board, 1)
+        valid_moves = game.getValidMoves(obs, 1)
         legal_actions = []
         for i, v in enumerate(valid_moves):
             if v == 1:
@@ -889,7 +899,7 @@ if __name__ == "__main__":
         action = np.random.choice(legal_actions)
         print(f"action={action}")
         # 执行动作
-        next_obs, reward, done, _ = env.step(action)
+        next_obs, reward, done, _, _ = env.step(action)
         
         # 打印信息
         print(f"Action taken: {action}")

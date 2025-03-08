@@ -12,6 +12,7 @@ checkpoints/
 .idea/
 
 chinese_chess_models/
+ppo_chess_model/
 *.log
 
 

@@ -82,8 +82,12 @@ $$
   - $\sum_{b}N(s,b)$ = sum(N[s])
 - 开发环境
   - 基础镜像：pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
-  - pip install coloredlogs==15.0.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
-  - pip install gym==0.26.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
+```bash
+pip install coloredlogs==15.0.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install gym==0.26.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install stable-baselines3==1.8.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install sb3_contrib==1.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
 - 通过getSymmetries函数得到更多的训练数据
 - 模型训练的输入是什么
   ```python
@@ -95,6 +99,9 @@ $$
   - 基础大模型其实知道一切，能否对大模型进行微调，给大模型棋盘fen+promopt，输出最佳action
   - 参考grpo算法
     - 什么是PPO
+## todo
+- ppo env
+  - 
 
 
 
