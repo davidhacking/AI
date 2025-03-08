@@ -14,9 +14,10 @@ class ChineseChessEnv(gym.Env):
         
         # 定义观察空间和动作空间
         self.observation_space = spaces.Box(
-            low=0, high=1,
-            shape=(ChineseChessBoard.BOARD_HEIGHT*ChineseChessBoard.BOARD_WIDTH+2,),  # 14 x 10 x 9
-            dtype=np.float32
+            low=0, 
+            high=1, 
+            shape=(14, 10, 9), 
+            dtype=np.int8
         )
         self.action_space = spaces.Discrete(ChineseChessBoard.action_size)  # 608
         
@@ -58,7 +59,8 @@ class ChineseChessEnv(gym.Env):
         return self._get_obs(), reward, done, False, {}
 
     def _get_obs(self):
-        return self.current_board
+        board = ChineseChessBoard(self.current_board)
+        return board.fen_to_planes()
 
     def _predict_opponent_action(self, board):
         board = ChineseChessBoard(board)

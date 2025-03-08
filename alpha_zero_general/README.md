@@ -101,7 +101,8 @@ pip install sb3_contrib==1.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
     - 什么是PPO
 ## todo
 - ppo env
-  - 
+  - 网络更换
+  - obs shape学习 返回更多信息
 
 
 
