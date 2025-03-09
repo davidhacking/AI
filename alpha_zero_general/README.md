@@ -101,8 +101,62 @@ pip install sb3_contrib==1.5.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
     - 什么是PPO
 ## todo
 - ppo env
-  - 网络更换
-  - obs shape学习 返回更多信息
-
+刚开始训练
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 51          |
+|    iterations           | 16          |
+|    time_elapsed         | 1271        |
+|    total_timesteps      | 65536       |
+| train/                  |             |
+|    approx_kl            | 0.076562025 |
+|    clip_fraction        | 0.244       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -3.43       |
+|    explained_variance   | 0.0936      |
+|    learning_rate        | 0.0003      |
+|    loss                 | 552         |
+|    n_updates            | 225         |
+|    policy_gradient_loss | -0.0184     |
+|    value_loss           | 7.05e+03    |
+-----------------------------------------
+训练几个小时后
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 68          |
+|    iterations           | 636         |
+|    time_elapsed         | 37971       |
+|    total_timesteps      | 2605056     |
+| train/                  |             |
+|    approx_kl            | 0.020117873 |
+|    clip_fraction        | 0.186       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.81       |
+|    explained_variance   | 0.73        |
+|    learning_rate        | 0.0003      |
+|    loss                 | 1e+03       |
+|    n_updates            | 9525        |
+|    policy_gradient_loss | -0.0167     |
+|    value_loss           | 4.14e+03    |
+-----------------------------------------
+快训练完
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 67          |
+|    iterations           | 1176        |
+|    time_elapsed         | 71128       |
+|    total_timesteps      | 4816896     |
+| train/                  |             |
+|    approx_kl            | 0.020891413 |
+|    clip_fraction        | 0.151       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.21       |
+|    explained_variance   | 0.664       |
+|    learning_rate        | 0.0003      |
+|    loss                 | 899         |
+|    n_updates            | 17625       |
+|    policy_gradient_loss | -0.00908    |
+|    value_loss           | 5.42e+03    |
+-----------------------------------------
 
 

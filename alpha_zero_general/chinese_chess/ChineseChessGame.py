@@ -85,7 +85,7 @@ class ChineseChessEnv(gym.Env):
             mask[list(legal_actions)] = 1
             action, _ = self.model.predict(board_rotate180.fen_to_planes(), 
                 action_masks=mask, deterministic=True)
-            action = np.argmax(action)
+            action = int(action)
         else:
             # 随机选择作为基线
             legal_actions = board_rotate180.get_legal_actions(ChineseChessBoard.RED)
