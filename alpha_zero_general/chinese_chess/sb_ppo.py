@@ -9,6 +9,7 @@ from stable_baselines3.common.policies import ActorCriticCnnPolicy
 from ChineseChessGame import ChineseChessEnv
 from stable_baselines3.common.vec_env import DummyVecEnv
 import os
+import numpy as np
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -102,6 +103,49 @@ def create_model(env, resume=False):
             policy_kwargs=policy_kwargs,
         )
 
+class MaskableEvalCallback(EvalCallback):
+    
+    def _on_step(self) -> bool:
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            episode_rewards = []
+            episode_lengths = []
+            for _ in range(self.n_eval_episodes):
+                obs, _ = self.realEvalEnv.reset()
+                done = False
+                episode_reward = 0.0
+                episode_len = 0
+                while not done:
+                    # 获取当前动作掩码
+                    action_mask = self.realEvalEnv.get_action_mask()
+                    
+                    # 带掩码预测
+                    action, _ = self.model.predict(
+                        obs, 
+                        action_masks=action_mask,
+                        deterministic=self.deterministic
+                    )
+                    action = int(action)
+                    # 渲染当前棋盘
+                    self.realEvalEnv.render()
+                    # 执行动作
+                    obs, reward, done, _, _ = self.realEvalEnv.step(action)
+                    episode_reward += reward
+                    episode_len += 1
+                    
+                episode_rewards.append(episode_reward)
+                episode_lengths.append(episode_len)
+            
+            mean_reward, std_reward = np.mean(episode_rewards), np.std(episode_rewards)
+            mean_ep_length, std_ep_length = np.mean(episode_lengths), np.std(episode_lengths)
+            self.last_mean_reward = float(mean_reward)
+            if mean_reward > self.best_mean_reward:
+                if self.verbose >= 1:
+                    print("New best mean reward!")
+                if self.best_model_save_path is not None:
+                    self.model.save(os.path.join(self.best_model_save_path, "best_model"))
+                self.best_mean_reward = float(mean_reward)
+        return True
+
 def train(resume=False):
     # 创建带掩码的环境
     realEnv = ChineseChessEnv()
@@ -123,16 +167,19 @@ def train(resume=False):
     )
     
     # 最佳模型保存（需要eval_env）
-    eval_env = DummyVecEnv([lambda: ActionMasker(ChineseChessEnv(), mask_fn)])
-    eval_callback = EvalCallback(
+    realEvalEnv = ChineseChessEnv()
+    eval_env = DummyVecEnv([lambda: ActionMasker(realEvalEnv, mask_fn)])
+    realEvalEnv.model = model
+    eval_callback = MaskableEvalCallback(
         eval_env,
         best_model_save_path="./ppo_chess_model/best/",
         log_path="./ppo_chess_model/logs/",
         eval_freq=200_000,  # 每20万步评估一次
         deterministic=True,
-        render=False,
+        render=True,
         n_eval_episodes=5
     )
+    eval_callback.realEvalEnv = realEvalEnv
     
     # 开始训练（使用动作掩码）
     model.learn(

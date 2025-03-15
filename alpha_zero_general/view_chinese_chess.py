@@ -25,8 +25,8 @@ class NNetPlayer():
         print(f"action={a}, move={x1},{y1} -> {x2},{y2}")
         return a
 
-player1 = NNetPlayer(g, './chinese_chess_models', 'temp.pth.tar').play
-player2 = NNetPlayer(g, './chinese_chess_models', 'temp.pth.tar').play
+player1 = NNetPlayer(g, './chinese_chess_models', 'best.pth.tar').play
+player2 = NNetPlayer(g, './chinese_chess_models', 'best.pth.tar').play
 
 
 arena = Arena.Arena(player1, player2, g, display=ChineseChessGame.display)
