@@ -86,18 +86,18 @@ class ModelLoader:
         self.model_file_name = model_path + "/best/best_model.zip"
         self.last_modified_time = 0
         if check_file_exists(self.model_file_name):
-            self.model = create_model(self.env, self.model_path, resume=True)
+            self.model = create_model(self.env, self.model_file_name, resume=True)
             self.last_modified_time = os.path.getmtime(self.model_file_name)
         else:
-            self.model = create_model(self.env, self.model_path, resume=False)
+            self.model = create_model(self.env, self.model_file_name, resume=False)
     def load_model(self):
         updated, ts = check_file_update(self.model_file_name, self.last_modified_time)
         if updated:
-            self.model = create_model(self.env, self.model_path, resume=True)
+            self.model = create_model(self.env, self.model_file_name, resume=True)
             self.last_modified_time = ts
             print(f"{self.model_file_name}模型更新成功")
         return self.model
-def create_model(env, model_path="./ppo_chess_red_model/ppo_chess", resume=False):
+def create_model(env, model_path, resume=False):
     """创建或加载模型的工厂函数"""
     policy_kwargs = {
         "features_extractor_class": CustomFeatureExtractor,
@@ -192,8 +192,8 @@ def train(resume=False):
     envRed = DummyVecEnv([lambda: ActionMasker(realEnvRed, mask_fn)])
     envBlack = DummyVecEnv([lambda: ActionMasker(realEnvBlack, mask_fn)])
     
-    realEnvRed.get_model_func = ModelLoader(envRed, "./ppo_chess_black_model/ppo_chess").load_model
-    realEnvBlack.get_model_func = ModelLoader(envBlack, "./ppo_chess_red_model/ppo_chess").load_model
+    realEnvRed.get_model_func = ModelLoader(envRed, "./ppo_chess_black_model").load_model
+    realEnvBlack.get_model_func = ModelLoader(envBlack, "./ppo_chess_red_model").load_model
 
     red_checkpoint_dir = "./ppo_chess_red_model/checkpoints/"
     black_checkpoint_dir = "./ppo_chess_black_model/checkpoints/"
@@ -223,8 +223,8 @@ def train(resume=False):
     realEvalEnvBlack.env_player = ChineseChessBoard.BLACK
     eval_env_red = DummyVecEnv([lambda: ActionMasker(realEvalEnvRed, mask_fn)])
     eval_env_black = DummyVecEnv([lambda: ActionMasker(realEvalEnvBlack, mask_fn)])
-    realEvalEnvRed.get_model_func = ModelLoader(eval_env_red, "./ppo_chess_black_model/ppo_chess").load_model
-    realEvalEnvBlack.get_model_func = ModelLoader(eval_env_black, "./ppo_chess_red_model/ppo_chess").load_model
+    realEvalEnvRed.get_model_func = ModelLoader(eval_env_red, "./ppo_chess_black_model").load_model
+    realEvalEnvBlack.get_model_func = ModelLoader(eval_env_black, "./ppo_chess_red_model").load_model
 
     eval_red_callback = MaskableEvalCallback(
         eval_env_red,
@@ -251,14 +251,14 @@ def train(resume=False):
     def worker_red(name):
         try:
             # 每个worker独立创建模型
-            local_model = create_model(envRed, "./ppo_chess_red_model/ppo_chess", resume)
+            local_model = create_model(envRed, "./ppo_chess_red_model/best/best_model.zip", resume)
             local_model.learn(
                 total_timesteps=5_000_000,
                 callback=[red_checkpoint_callback, eval_red_callback],
                 reset_num_timesteps=True,
                 use_masking=True
             )
-            local_model.save("./ppo_chess_red_model/ppo_chess")
+            local_model.save("./ppo_chess_red_model/final_model")
             print(f"[Red] 训练完成，模型已保存")
         except Exception as e:
             print(f"[Red] 训练出错: {str(e)}")
@@ -266,14 +266,14 @@ def train(resume=False):
     def worker_black(name):
         try:
             # 每个worker独立创建模型
-            local_model = create_model(envBlack, "./ppo_chess_black_model/ppo_chess", resume)
+            local_model = create_model(envBlack, "./ppo_chess_black_model/best/best_model.zip", resume)
             local_model.learn(
                 total_timesteps=5_000_000,
                 callback=[black_checkpoint_callback, eval_black_callback],
                 reset_num_timesteps=True,
                 use_masking=True
             )
-            local_model.save("./ppo_chess_black_model/ppo_chess")
+            local_model.save("./ppo_chess_black_model/final_model")
             print(f"[Black] 训练完成，模型已保存")
         except Exception as e:
             print(f"[Black] 训练出错: {str(e)}")
