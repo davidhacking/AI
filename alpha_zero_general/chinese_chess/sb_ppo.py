@@ -15,6 +15,8 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.callbacks import EvalCallback
 import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
+import concurrent
 
 def mask_fn(env):
     return env.get_action_mask()
@@ -69,7 +71,6 @@ def check_file_update(file_path, last_modified_time):
         else:
             return False, last_modified_time
     except FileNotFoundError:
-        print(f"{file_path}文件不存在")
         return False, last_modified_time
 
 def check_file_exists(file_path):
@@ -90,7 +91,7 @@ class ModelLoader:
         else:
             self.model = create_model(self.env, self.model_path, resume=False)
     def load_model(self):
-        updated, ts = check_file_update(self.model_file_name)
+        updated, ts = check_file_update(self.model_file_name, self.last_modified_time)
         if updated:
             self.model = create_model(self.env, self.model_path, resume=True)
             self.last_modified_time = ts
@@ -247,39 +248,56 @@ def train(resume=False):
     )
     eval_black_callback.realEvalEnv = realEvalEnvBlack
     
-    red_model = create_model(envRed, "./ppo_chess_red_model/ppo_chess", resume)
-    black_model = create_model(envBlack, "./ppo_chess_black_model/ppo_chess", resume)
-    
     def worker_red(name):
-        red_model.learn(
-            total_timesteps=5_000_000,
-            callback=[red_checkpoint_callback, eval_red_callback],  # 添加回调
-            reset_num_timesteps=True,
-            use_masking=True  # 启用掩码机制
-        )
-        save_path = "./ppo_chess_red_model"
-        os.makedirs(save_path, exist_ok=True)
-        model.save(f"{save_path}/ppo_chess")
-        print(f"Model saved to {save_path}")
-    
+        try:
+            # 每个worker独立创建模型
+            local_model = create_model(envRed, "./ppo_chess_red_model/ppo_chess", resume)
+            local_model.learn(
+                total_timesteps=5_000_000,
+                callback=[red_checkpoint_callback, eval_red_callback],
+                reset_num_timesteps=True,
+                use_masking=True
+            )
+            local_model.save("./ppo_chess_red_model/ppo_chess")
+            print(f"[Red] 训练完成，模型已保存")
+        except Exception as e:
+            print(f"[Red] 训练出错: {str(e)}")
+
     def worker_black(name):
-        black_model.learn(
-            total_timesteps=5_000_000,
-            callback=[black_checkpoint_callback, eval_black_callback],  # 添加回调
-            reset_num_timesteps=True,
-            use_masking=True  # 启用掩码机制
-        )
-        save_path = "./ppo_chess_black_model"
-        os.makedirs(save_path, exist_ok=True)
-        model.save(f"{save_path}/ppo_chess")
-        print(f"Model saved to {save_path}")
-    
-    p1 = multiprocessing.Process(target=worker_red, args=("ProcessRed",))
-    p2 = multiprocessing.Process(target=worker_black, args=("ProcessBlack",))
-    p1.start()
-    p2.start()
-    p1.join()
-    p2.join()
+        try:
+            # 每个worker独立创建模型
+            local_model = create_model(envBlack, "./ppo_chess_black_model/ppo_chess", resume)
+            local_model.learn(
+                total_timesteps=5_000_000,
+                callback=[black_checkpoint_callback, eval_black_callback],
+                reset_num_timesteps=True,
+                use_masking=True
+            )
+            local_model.save("./ppo_chess_black_model/ppo_chess")
+            print(f"[Black] 训练完成，模型已保存")
+        except Exception as e:
+            print(f"[Black] 训练出错: {str(e)}")
+
+    # 修改线程启动方式
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # 显式获取future对象
+        future_red = executor.submit(worker_red, "Red")
+        future_black = executor.submit(worker_black, "Black")
+        
+        # 等待所有任务完成
+        concurrent.futures.wait([future_red, future_black])
+        # concurrent.futures.wait([future_black])
+        
+        # 检查异常
+        for future in [future_red, future_black]:
+            if future.exception():
+                print(f"训练出现异常: {future.exception()}")
+        
+        # for future in [future_black]:
+        #     if future.exception():
+        #         print(f"训练出现异常: {future.exception()}")
+
+    print("主线程等待所有训练任务完成")  # 添加进度提示
 
 def test(model_path=None):
     """

@@ -51,18 +51,18 @@ class ChineseChessEnv(gym.Env):
                 done = ChineseChessBoard(self.current_board).get_winner() is not None
             return self._get_obs(), reward, done, False, {}
         else:
-            model_action = self._predict_opponent_action(self.current_board)
             board = ChineseChessBoard(self.current_board)
-            s1 = board.takeAction(model_action, ChineseChessBoard.RED)
+            s2 = board.takeAction(action, ChineseChessBoard.BLACK)
             self.current_board = board.board
-            reward = -s1
             done = ChineseChessBoard(self.current_board).get_winner() is not None
+            reward = s2
             if not done:
+                model_action = self._predict_opponent_action(self.current_board)
                 board = ChineseChessBoard(self.current_board)
-                s1 = board.takeAction(action, ChineseChessBoard.BLACK)
+                s1 = board.takeAction(model_action, ChineseChessBoard.RED)
                 self.current_board = board.board
+                reward = -s1
                 done = ChineseChessBoard(self.current_board).get_winner() is not None
-                reward += s2
             return self._get_obs(), reward, done, False, {}
 
     def _get_obs(self):
@@ -85,7 +85,7 @@ class ChineseChessEnv(gym.Env):
                     board_rotate180[height - 1 - i, width - 1 - j] = board[i, j]
             return ChineseChessBoard(board_rotate180.board)
         board_rotate180 = rotate_180(board)
-        model = self.get_model_func(self)
+        model = self.get_model_func()
         if model:
             legal_actions = board_rotate180.get_legal_actions(self.env_player)
             mask = np.zeros(self.action_space.n, dtype=np.int8)
