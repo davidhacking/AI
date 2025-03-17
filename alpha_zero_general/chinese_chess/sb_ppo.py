@@ -6,7 +6,7 @@ from sb3_contrib import MaskablePPO
 from sb3_contrib.common.wrappers import ActionMasker
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.policies import ActorCriticCnnPolicy
-from ChineseChessGame import ChineseChessEnv
+from ChineseChessGame import ChineseChessEnv, ChineseChessBoard
 from stable_baselines3.common.vec_env import DummyVecEnv
 import os
 import numpy as np
@@ -14,6 +14,8 @@ from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.callbacks import EvalCallback
+import multiprocessing
+
 def mask_fn(env):
     return env.get_action_mask()
 
@@ -59,7 +61,42 @@ class ResidualBlock(nn.Module):
     def forward(self, x):
         return F.relu(x + self.block(x))
 
-def create_model(env, resume=False):
+def check_file_update(file_path, last_modified_time):
+    try:
+        current_modified_time = os.path.getmtime(file_path)
+        if current_modified_time > last_modified_time:
+            return True, current_modified_time
+        else:
+            return False, last_modified_time
+    except FileNotFoundError:
+        print(f"{file_path}文件不存在")
+        return False, last_modified_time
+
+def check_file_exists(file_path):
+    if os.path.exists(file_path):
+        return True
+    else:
+        return False
+
+class ModelLoader:
+    def __init__(self, env, model_path):
+        self.env = env
+        self.model_path = model_path
+        self.model_file_name = model_path + "/best/best_model.zip"
+        self.last_modified_time = 0
+        if check_file_exists(self.model_file_name):
+            self.model = create_model(self.env, self.model_path, resume=True)
+            self.last_modified_time = os.path.getmtime(self.model_file_name)
+        else:
+            self.model = create_model(self.env, self.model_path, resume=False)
+    def load_model(self):
+        updated, ts = check_file_update(self.model_file_name)
+        if updated:
+            self.model = create_model(self.env, self.model_path, resume=True)
+            self.last_modified_time = ts
+            print(f"{self.model_file_name}模型更新成功")
+        return self.model
+def create_model(env, model_path="./ppo_chess_red_model/ppo_chess", resume=False):
     """创建或加载模型的工厂函数"""
     policy_kwargs = {
         "features_extractor_class": CustomFeatureExtractor,
@@ -74,7 +111,7 @@ def create_model(env, resume=False):
     }
 
     if resume:
-        model_path = "./ppo_chess_model/ppo_chess"
+        model_path = model_path
         model = MaskablePPO.load(
             model_path,
             env=env,
@@ -147,53 +184,102 @@ class MaskableEvalCallback(EvalCallback):
         return True
 
 def train(resume=False):
-    # 创建带掩码的环境
-    realEnv = ChineseChessEnv()
-    env = DummyVecEnv([lambda: ActionMasker(realEnv, mask_fn)])
+    realEnvRed = ChineseChessEnv()
+    realEnvRed.env_player = ChineseChessBoard.RED
+    realEnvBlack = ChineseChessEnv()
+    realEnvBlack.env_player = ChineseChessBoard.BLACK
+    envRed = DummyVecEnv([lambda: ActionMasker(realEnvRed, mask_fn)])
+    envBlack = DummyVecEnv([lambda: ActionMasker(realEnvBlack, mask_fn)])
     
-    model = create_model(env, resume)
-    realEnv.model = model
+    realEnvRed.get_model_func = ModelLoader(envRed, "./ppo_chess_black_model/ppo_chess").load_model
+    realEnvBlack.get_model_func = ModelLoader(envBlack, "./ppo_chess_red_model/ppo_chess").load_model
 
-    checkpoint_dir = "./ppo_chess_model/checkpoints/"
-    os.makedirs(checkpoint_dir, exist_ok=True)
+    red_checkpoint_dir = "./ppo_chess_red_model/checkpoints/"
+    black_checkpoint_dir = "./ppo_chess_black_model/checkpoints/"
+    os.makedirs(red_checkpoint_dir, exist_ok=True)
+    os.makedirs(black_checkpoint_dir, exist_ok=True)
     
     # 自动保存检查点（每50万步）
-    checkpoint_callback = CheckpointCallback(
+    red_checkpoint_callback = CheckpointCallback(
         save_freq=500_000,
-        save_path=checkpoint_dir,
-        name_prefix="ppo_chess",
+        save_path=red_checkpoint_dir,
+        name_prefix="ppo_chess_red",
+        save_replay_buffer=True,
+        save_vecnormalize=True,
+    )
+    black_checkpoint_callback = CheckpointCallback(
+        save_freq=500_000,
+        save_path=black_checkpoint_dir,
+        name_prefix="ppo_chess_black",
         save_replay_buffer=True,
         save_vecnormalize=True,
     )
     
     # 最佳模型保存（需要eval_env）
-    realEvalEnv = ChineseChessEnv()
-    eval_env = DummyVecEnv([lambda: ActionMasker(realEvalEnv, mask_fn)])
-    realEvalEnv.model = model
-    eval_callback = MaskableEvalCallback(
-        eval_env,
-        best_model_save_path="./ppo_chess_model/best/",
-        log_path="./ppo_chess_model/logs/",
+    realEvalEnvRed = ChineseChessEnv()
+    realEvalEnvRed.env_player = ChineseChessBoard.RED
+    realEvalEnvBlack = ChineseChessEnv()
+    realEvalEnvBlack.env_player = ChineseChessBoard.BLACK
+    eval_env_red = DummyVecEnv([lambda: ActionMasker(realEvalEnvRed, mask_fn)])
+    eval_env_black = DummyVecEnv([lambda: ActionMasker(realEvalEnvBlack, mask_fn)])
+    realEvalEnvRed.get_model_func = ModelLoader(eval_env_red, "./ppo_chess_black_model/ppo_chess").load_model
+    realEvalEnvBlack.get_model_func = ModelLoader(eval_env_black, "./ppo_chess_red_model/ppo_chess").load_model
+
+    eval_red_callback = MaskableEvalCallback(
+        eval_env_red,
+        best_model_save_path="./ppo_chess_red_model/best/",
+        log_path="./ppo_chess_red_model/logs/",
         eval_freq=200_000,  # 每20万步评估一次
         deterministic=True,
         render=True,
         n_eval_episodes=5
     )
-    eval_callback.realEvalEnv = realEvalEnv
-    
-    # 开始训练（使用动作掩码）
-    model.learn(
-        total_timesteps=5_000_000,
-        callback=[checkpoint_callback, eval_callback],  # 添加回调
-        reset_num_timesteps=True,
-        use_masking=True  # 启用掩码机制
+    eval_red_callback.realEvalEnv = realEvalEnvRed
+
+    eval_black_callback = MaskableEvalCallback(
+        eval_env_black,
+        best_model_save_path="./ppo_chess_black_model/best/",
+        log_path="./ppo_chess_black_model/logs/",
+        eval_freq=200_000,  # 每20万步评估一次
+        deterministic=True,
+        render=True,
+        n_eval_episodes=5
     )
+    eval_black_callback.realEvalEnv = realEvalEnvBlack
     
-    # 保存模型
-    save_path = "./ppo_chess_model"
-    os.makedirs(save_path, exist_ok=True)
-    model.save(f"{save_path}/ppo_chess")
-    print(f"Model saved to {save_path}")
+    red_model = create_model(envRed, "./ppo_chess_red_model/ppo_chess", resume)
+    black_model = create_model(envBlack, "./ppo_chess_black_model/ppo_chess", resume)
+    
+    def worker_red(name):
+        red_model.learn(
+            total_timesteps=5_000_000,
+            callback=[red_checkpoint_callback, eval_red_callback],  # 添加回调
+            reset_num_timesteps=True,
+            use_masking=True  # 启用掩码机制
+        )
+        save_path = "./ppo_chess_red_model"
+        os.makedirs(save_path, exist_ok=True)
+        model.save(f"{save_path}/ppo_chess")
+        print(f"Model saved to {save_path}")
+    
+    def worker_black(name):
+        black_model.learn(
+            total_timesteps=5_000_000,
+            callback=[black_checkpoint_callback, eval_black_callback],  # 添加回调
+            reset_num_timesteps=True,
+            use_masking=True  # 启用掩码机制
+        )
+        save_path = "./ppo_chess_black_model"
+        os.makedirs(save_path, exist_ok=True)
+        model.save(f"{save_path}/ppo_chess")
+        print(f"Model saved to {save_path}")
+    
+    p1 = multiprocessing.Process(target=worker_red, args=("ProcessRed",))
+    p2 = multiprocessing.Process(target=worker_black, args=("ProcessBlack",))
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
 
 def test(model_path=None):
     """

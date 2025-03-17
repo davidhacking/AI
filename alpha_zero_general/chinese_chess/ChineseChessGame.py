@@ -8,9 +8,9 @@ from gymnasium import spaces
 class ChineseChessEnv(gym.Env):
     metadata = {'render.modes': ['human']}
     
-    def __init__(self, model=None):
+    def __init__(self):
         super(ChineseChessEnv, self).__init__()
-        self.model = model  # 用于预测对手动作的模型
+        self.get_model_func = None
         
         # 定义观察空间和动作空间
         self.observation_space = spaces.Box(
@@ -20,13 +20,13 @@ class ChineseChessEnv(gym.Env):
             dtype=np.int8
         )
         self.action_space = spaces.Discrete(ChineseChessBoard.action_size)  # 608
-        
+        self.env_player = ChineseChessBoard.RED
         self.current_board = ChineseChessBoard().board
 
     def get_action_mask(self):
         """获取当前合法动作掩码"""
         board = ChineseChessBoard(self.current_board)
-        legal_actions = board.get_legal_actions(ChineseChessBoard.RED)
+        legal_actions = board.get_legal_actions(self.env_player)
         mask = np.zeros(self.action_space.n, dtype=bool)
         mask[list(legal_actions)] = True
         return mask
@@ -36,27 +36,34 @@ class ChineseChessEnv(gym.Env):
         return self._get_obs(), {}
 
     def step(self, action):
-        # 玩家执行动作
-        board = ChineseChessBoard(self.current_board)
-        s1 = board.takeAction(action, ChineseChessBoard.RED)
-        self.current_board = board.board
-        
-        # 检查终止条件
-        done = ChineseChessBoard(self.current_board).get_winner() is not None
-        reward = s1
-        
-        if not done:
-            # 对手（模型）执行动作
+        if self.env_player == ChineseChessBoard.RED:
+            board = ChineseChessBoard(self.current_board)
+            s1 = board.takeAction(action, ChineseChessBoard.RED)
+            self.current_board = board.board
+            done = ChineseChessBoard(self.current_board).get_winner() is not None
+            reward = s1
+            if not done:
+                model_action = self._predict_opponent_action(self.current_board)
+                board = ChineseChessBoard(self.current_board)
+                s2 = board.takeAction(model_action, ChineseChessBoard.BLACK)
+                self.current_board = board.board
+                reward -= s2
+                done = ChineseChessBoard(self.current_board).get_winner() is not None
+            return self._get_obs(), reward, done, False, {}
+        else:
             model_action = self._predict_opponent_action(self.current_board)
             board = ChineseChessBoard(self.current_board)
-            s2 = board.takeAction(model_action, ChineseChessBoard.BLACK)
+            s1 = board.takeAction(model_action, ChineseChessBoard.RED)
             self.current_board = board.board
-            
-            # 计算奖励
-            reward -= s2
+            reward = -s1
             done = ChineseChessBoard(self.current_board).get_winner() is not None
-        
-        return self._get_obs(), reward, done, False, {}
+            if not done:
+                board = ChineseChessBoard(self.current_board)
+                s1 = board.takeAction(action, ChineseChessBoard.BLACK)
+                self.current_board = board.board
+                done = ChineseChessBoard(self.current_board).get_winner() is not None
+                reward += s2
+            return self._get_obs(), reward, done, False, {}
 
     def _get_obs(self):
         board = ChineseChessBoard(self.current_board)
@@ -78,17 +85,16 @@ class ChineseChessEnv(gym.Env):
                     board_rotate180[height - 1 - i, width - 1 - j] = board[i, j]
             return ChineseChessBoard(board_rotate180.board)
         board_rotate180 = rotate_180(board)
-        if self.model:
-            # 使用模型预测动作的逻辑
-            legal_actions = board_rotate180.get_legal_actions(ChineseChessBoard.RED)
+        model = self.get_model_func(self)
+        if model:
+            legal_actions = board_rotate180.get_legal_actions(self.env_player)
             mask = np.zeros(self.action_space.n, dtype=np.int8)
             mask[list(legal_actions)] = 1
-            action, _ = self.model.predict(board_rotate180.fen_to_planes(), 
+            action, _ = model.predict(board_rotate180.fen_to_planes(), 
                 action_masks=mask, deterministic=True)
             action = int(action)
         else:
-            # 随机选择作为基线
-            legal_actions = board_rotate180.get_legal_actions(ChineseChessBoard.RED)
+            legal_actions = board_rotate180.get_legal_actions(self.env_player)
             action = np.random.choice(list(legal_actions))
         m180 = board_rotate180.action_to_move(action)
         height = board.BOARD_HEIGHT
