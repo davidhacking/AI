@@ -17,6 +17,8 @@ from stable_baselines3.common.callbacks import EvalCallback
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor
 import concurrent
+from stable_baselines3.common.callbacks import BaseCallback
+import time
 
 def mask_fn(env):
     return env.get_action_mask()
@@ -79,6 +81,15 @@ def check_file_exists(file_path):
     else:
         return False
 
+def timestamp_to_formatted_str(timestamp):
+    # 将时间戳转换为本地时间
+    local_time = time.localtime(timestamp)
+    
+    # 格式化时间
+    formatted_time = time.strftime("%Y年%m月%d日 %H:%M:%S", local_time)
+    
+    return formatted_time
+
 class ModelLoader:
     def __init__(self, env, model_path):
         self.env = env
@@ -90,6 +101,9 @@ class ModelLoader:
             self.last_modified_time = os.path.getmtime(self.model_file_name)
         else:
             self.model = create_model(self.env, self.model_file_name, resume=False)
+    
+    def get_time(self):
+        return timestamp_to_formatted_str(self.last_modified_time)
     def load_model(self):
         updated, ts = check_file_update(self.model_file_name, self.last_modified_time)
         if updated:
@@ -184,6 +198,22 @@ class MaskableEvalCallback(EvalCallback):
                 self.best_mean_reward = float(mean_reward)
         return True
 
+class CustomLoggingCallback(BaseCallback):
+    def __init__(self, verbose=0, modelName="", modelLoader=None):
+        super().__init__(verbose)
+        self.modelName = modelName
+        self.modelLoader = modelLoader
+        
+    def _on_rollout_end(self) -> None:
+        """ 每个rollout（n_steps=4096步）结束时触发 """
+        print(f"\n=== 自定义训练信息 @ {self.num_timesteps} steps ===")
+        print(f"modelName: {self.modelName}")
+        print(f"envModelVersion: {self.modelLoader.get_time()}")
+        print("-"*50)  # 保持与系统日志相同的分割线
+
+    def _on_step(self) -> bool:
+        return True  # 保持默认行为
+
 def train(resume=False):
     realEnvRed = ChineseChessEnv()
     realEnvRed.env_player = ChineseChessBoard.RED
@@ -223,8 +253,10 @@ def train(resume=False):
     realEvalEnvBlack.env_player = ChineseChessBoard.BLACK
     eval_env_red = DummyVecEnv([lambda: ActionMasker(realEvalEnvRed, mask_fn)])
     eval_env_black = DummyVecEnv([lambda: ActionMasker(realEvalEnvBlack, mask_fn)])
-    realEvalEnvRed.get_model_func = ModelLoader(eval_env_red, "./ppo_chess_black_model").load_model
-    realEvalEnvBlack.get_model_func = ModelLoader(eval_env_black, "./ppo_chess_red_model").load_model
+    blackModelLoader = ModelLoader(eval_env_red, "./ppo_chess_black_model")
+    realEvalEnvRed.get_model_func = blackModelLoader.load_model
+    redModelLoader = ModelLoader(eval_env_black, "./ppo_chess_red_model")
+    realEvalEnvBlack.get_model_func = redModelLoader.load_model
 
     eval_red_callback = MaskableEvalCallback(
         eval_env_red,
@@ -254,7 +286,12 @@ def train(resume=False):
             local_model = create_model(envRed, "./ppo_chess_red_model/best/best_model.zip", resume)
             local_model.learn(
                 total_timesteps=5_000_000,
-                callback=[red_checkpoint_callback, eval_red_callback],
+                callback=[
+                    red_checkpoint_callback, 
+                    eval_red_callback,
+                    CustomLoggingCallback(modelName="redModelTraining",
+                                          modelLoader=blackModelLoader)
+                ],
                 reset_num_timesteps=True,
                 use_masking=True
             )
@@ -269,7 +306,12 @@ def train(resume=False):
             local_model = create_model(envBlack, "./ppo_chess_black_model/best/best_model.zip", resume)
             local_model.learn(
                 total_timesteps=5_000_000,
-                callback=[black_checkpoint_callback, eval_black_callback],
+                callback=[
+                    black_checkpoint_callback, 
+                    eval_black_callback,
+                    CustomLoggingCallback(modelName="blackModelTraining",
+                                          modelLoader=redModelLoader)
+                ],
                 reset_num_timesteps=True,
                 use_masking=True
             )

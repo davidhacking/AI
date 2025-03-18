@@ -7,3 +7,5 @@ vae_imgs
 profile.prof
 profile.svg
 *.pyc
+ppo_chess_black_model/
+ppo_chess_red_model/
