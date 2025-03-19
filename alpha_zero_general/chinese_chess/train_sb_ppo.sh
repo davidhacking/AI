@@ -1,2 +1,1 @@
-python sb_ppo.py --train --resume > train_sb_ppo.log 2>&1 &
-tail -f train_sb_ppo.log
+python sb_ppo.py --train --resume 2>&1 | tee train_sb_ppo.log

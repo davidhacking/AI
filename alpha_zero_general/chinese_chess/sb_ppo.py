@@ -19,12 +19,38 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent
 from stable_baselines3.common.callbacks import BaseCallback
 import time
+import hashlib
 
 def mask_fn(env):
     return env.get_action_mask()
 
+def hashfile(file_path, flag=False):
+    sha256_hash = hashlib.sha256()
+
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    
+    hash_value = sha256_hash.hexdigest()
+    if flag:
+        hash_file_path = file_path + ".hash"
+        with open(hash_file_path, "w") as hash_file:
+            hash_file.write(hash_value)
+
+    return hash_value
+
+def checkhash(file_path):
+    current_hash = hashfile(file_path)
+    hash_file_path = file_path + ".hash"
+    if not os.path.exists(hash_file_path):
+        raise FileNotFoundError(f"Hash file not found: {hash_file_path}")
+    
+    with open(hash_file_path, "r") as hash_file:
+        saved_hash = hash_file.read().strip()
+
+    return current_hash == saved_hash
+
 class CustomFeatureExtractor(BaseFeaturesExtractor):
-    """自定义特征提取器处理(14,10,9)的棋盘平面"""
     def __init__(self, observation_space, features_dim=512, 
                  res_layers=10, filters=256):
         super().__init__(observation_space, features_dim)
@@ -51,7 +77,6 @@ class CustomFeatureExtractor(BaseFeaturesExtractor):
         return self.alpha_zero_net(obs)
 
 class ResidualBlock(nn.Module):
-    """残差块模块"""
     def __init__(self, filters):
         super().__init__()
         self.block = nn.Sequential(
@@ -106,13 +131,12 @@ class ModelLoader:
         return timestamp_to_formatted_str(self.last_modified_time)
     def load_model(self):
         updated, ts = check_file_update(self.model_file_name, self.last_modified_time)
-        if updated:
+        if updated and checkhash(self.model_file_name):
             self.model = create_model(self.env, self.model_file_name, resume=True)
             self.last_modified_time = ts
             print(f"{self.model_file_name}模型更新成功")
         return self.model
 def create_model(env, model_path, resume=False):
-    """创建或加载模型的工厂函数"""
     policy_kwargs = {
         "features_extractor_class": CustomFeatureExtractor,
         "features_extractor_kwargs": {
@@ -195,6 +219,7 @@ class MaskableEvalCallback(EvalCallback):
                     print("New best mean reward!")
                 if self.best_model_save_path is not None:
                     self.model.save(os.path.join(self.best_model_save_path, "best_model"))
+                    hashfile(os.path.join(self.best_model_save_path, "best_model.zip"), True)
                 self.best_mean_reward = float(mean_reward)
         return True
 
@@ -205,7 +230,6 @@ class CustomLoggingCallback(BaseCallback):
         self.modelLoader = modelLoader
         
     def _on_rollout_end(self) -> None:
-        """ 每个rollout（n_steps=4096步）结束时触发 """
         print(f"\n=== 自定义训练信息 @ {self.num_timesteps} steps ===")
         print(f"modelName: {self.modelName}")
         print(f"envModelVersion: {self.modelLoader.get_time()}")
@@ -221,9 +245,12 @@ def train(resume=False):
     realEnvBlack.env_player = ChineseChessBoard.BLACK
     envRed = DummyVecEnv([lambda: ActionMasker(realEnvRed, mask_fn)])
     envBlack = DummyVecEnv([lambda: ActionMasker(realEnvBlack, mask_fn)])
-    
-    realEnvRed.get_model_func = ModelLoader(envRed, "./ppo_chess_black_model").load_model
-    realEnvBlack.get_model_func = ModelLoader(envBlack, "./ppo_chess_red_model").load_model
+    hashfile("./ppo_chess_red_model/best/best_model.zip", True)
+    hashfile("./ppo_chess_black_model/best/best_model.zip", True)
+    blackModelLoader = ModelLoader(envRed, "./ppo_chess_black_model")
+    realEnvRed.get_model_func = blackModelLoader.load_model
+    redModelLoader = ModelLoader(envBlack, "./ppo_chess_red_model")
+    realEnvBlack.get_model_func = redModelLoader.load_model
 
     red_checkpoint_dir = "./ppo_chess_red_model/checkpoints/"
     black_checkpoint_dir = "./ppo_chess_black_model/checkpoints/"
@@ -253,10 +280,8 @@ def train(resume=False):
     realEvalEnvBlack.env_player = ChineseChessBoard.BLACK
     eval_env_red = DummyVecEnv([lambda: ActionMasker(realEvalEnvRed, mask_fn)])
     eval_env_black = DummyVecEnv([lambda: ActionMasker(realEvalEnvBlack, mask_fn)])
-    blackModelLoader = ModelLoader(eval_env_red, "./ppo_chess_black_model")
-    realEvalEnvRed.get_model_func = blackModelLoader.load_model
-    redModelLoader = ModelLoader(eval_env_black, "./ppo_chess_red_model")
-    realEvalEnvBlack.get_model_func = redModelLoader.load_model
+    realEvalEnvRed.get_model_func = ModelLoader(eval_env_red, "./ppo_chess_black_model").load_model
+    realEvalEnvBlack.get_model_func = ModelLoader(eval_env_black, "./ppo_chess_red_model").load_model
 
     eval_red_callback = MaskableEvalCallback(
         eval_env_red,
@@ -342,9 +367,6 @@ def train(resume=False):
     print("主线程等待所有训练任务完成")  # 添加进度提示
 
 def test(model_path=None):
-    """
-    测试训练好的模型并渲染过程
-    """
     # 创建带掩码的环境
     realEnv = ChineseChessEnv()
     env = ActionMasker(realEnv, mask_fn)
