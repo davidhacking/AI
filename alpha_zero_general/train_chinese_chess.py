@@ -26,12 +26,12 @@ args = dotdict({
     'ebsGreedyRate': 0.0,
     'updateThreshold': 0.55,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 1000,          # Number of games moves for MCTS to simulate.
-    'arenaCompare': 40,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1.5,
+    'numMCTSSims': 500,          # Number of games moves for MCTS to simulate.
+    'arenaCompare': 20,         # Number of games to play during arena play to determine if new net will be accepted.
+    'cpuct': 1.2,
     'checkpoint': './chinese_chess_models/',
     'load_model': True,
-    'load_train_examples': False,
+    'load_train_examples': True,
     'load_folder_file': ('./chinese_chess_models','best.pth.tar'),
     'load_examples_folder_file': ('./chinese_chess_models','checkpoint_6.pth.tar'),
     'numItersForTrainExamplesHistory': 5, # 内存不够

@@ -129,6 +129,7 @@ class ModelLoader:
     
     def get_time(self):
         return timestamp_to_formatted_str(self.last_modified_time)
+    
     def load_model(self):
         updated, ts = check_file_update(self.model_file_name, self.last_modified_time)
         if updated and checkhash(self.model_file_name):
@@ -136,6 +137,7 @@ class ModelLoader:
             self.last_modified_time = ts
             print(f"{self.model_file_name}模型更新成功")
         return self.model
+
 def create_model(env, model_path, resume=False):
     policy_kwargs = {
         "features_extractor_class": CustomFeatureExtractor,
@@ -229,14 +231,14 @@ class CustomLoggingCallback(BaseCallback):
         self.modelName = modelName
         self.modelLoader = modelLoader
         
-    def _on_rollout_end(self) -> None:
+    def _on_rollout_end(self):
         print(f"\n=== 自定义训练信息 @ {self.num_timesteps} steps ===")
         print(f"modelName: {self.modelName}")
         print(f"envModelVersion: {self.modelLoader.get_time()}")
-        print("-"*50)  # 保持与系统日志相同的分割线
+        print("-"*50)
 
-    def _on_step(self) -> bool:
-        return True  # 保持默认行为
+    def _on_step(self):
+        return True
 
 def train(resume=False):
     realEnvRed = ChineseChessEnv()

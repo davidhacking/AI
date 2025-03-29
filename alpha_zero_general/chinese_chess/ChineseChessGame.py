@@ -4,6 +4,7 @@ import random
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
+import sys
 
 class ChineseChessEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -838,7 +839,7 @@ class ChineseChessGame():
         # board_rotate180.print_board()
         # board_mirror.print_board()
         for a, p in enumerate(pi):
-            if p == 0:
+            if abs(p) < sys.float_info.epsilon:
                 continue
             m = board.action_to_move(a)
             d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
