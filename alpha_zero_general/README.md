@@ -82,16 +82,79 @@ $$
   - $\sum_{b}N(s,b)$ = sum(N[s])
 - 开发环境
   - 基础镜像：pytorch/pytorch:2.3.0-cuda12.1-cudnn8-runtime
-  - pip install coloredlogs==15.0.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+```bash
+pip install coloredlogs==15.0.1 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install sb3_contrib -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
 - 通过getSymmetries函数得到更多的训练数据
 - 模型训练的输入是什么
   ```python
   boards = torch.FloatTensor(np.array(boards).astype(np.float64))
   ```
 
-## TODO
-- 棋盘board加入当前行动玩家 当前进行轮次数 上一次吃子轮次数
-- action应该改成 x1 y1 x2 y2，这样不论是board还是canonicalBoard，同一个action的意义是一样的
-
+## 问题
+- mcts需要模拟1000次才能得到比较准确的局面评估的概率分布，这显然太慢了
+  - 基础大模型其实知道一切，能否对大模型进行微调，给大模型棋盘fen+promopt，输出最佳action
+  - 参考grpo算法
+    - 什么是PPO
+## todo
+- ppo env
+刚开始训练
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 51          |
+|    iterations           | 16          |
+|    time_elapsed         | 1271        |
+|    total_timesteps      | 65536       |
+| train/                  |             |
+|    approx_kl            | 0.076562025 |
+|    clip_fraction        | 0.244       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -3.43       |
+|    explained_variance   | 0.0936      |
+|    learning_rate        | 0.0003      |
+|    loss                 | 552         |
+|    n_updates            | 225         |
+|    policy_gradient_loss | -0.0184     |
+|    value_loss           | 7.05e+03    |
+-----------------------------------------
+训练几个小时后
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 68          |
+|    iterations           | 636         |
+|    time_elapsed         | 37971       |
+|    total_timesteps      | 2605056     |
+| train/                  |             |
+|    approx_kl            | 0.020117873 |
+|    clip_fraction        | 0.186       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.81       |
+|    explained_variance   | 0.73        |
+|    learning_rate        | 0.0003      |
+|    loss                 | 1e+03       |
+|    n_updates            | 9525        |
+|    policy_gradient_loss | -0.0167     |
+|    value_loss           | 4.14e+03    |
+-----------------------------------------
+快训练完
+-----------------------------------------
+| time/                   |             |
+|    fps                  | 67          |
+|    iterations           | 1176        |
+|    time_elapsed         | 71128       |
+|    total_timesteps      | 4816896     |
+| train/                  |             |
+|    approx_kl            | 0.020891413 |
+|    clip_fraction        | 0.151       |
+|    clip_range           | 0.2         |
+|    entropy_loss         | -1.21       |
+|    explained_variance   | 0.664       |
+|    learning_rate        | 0.0003      |
+|    loss                 | 899         |
+|    n_updates            | 17625       |
+|    policy_gradient_loss | -0.00908    |
+|    value_loss           | 5.42e+03    |
+-----------------------------------------
 
 

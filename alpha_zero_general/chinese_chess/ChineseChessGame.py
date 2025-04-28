@@ -1,6 +1,117 @@
 import numpy as np
 from enum import Enum
 import random
+import gymnasium as gym
+import numpy as np
+from gymnasium import spaces
+import sys
+
+class ChineseChessEnv(gym.Env):
+    metadata = {'render.modes': ['human']}
+    
+    def __init__(self):
+        super(ChineseChessEnv, self).__init__()
+        self.get_model_func = None
+        
+        # 定义观察空间和动作空间
+        self.observation_space = spaces.Box(
+            low=0, 
+            high=1, 
+            shape=(14, 10, 9), 
+            dtype=np.int8
+        )
+        self.action_space = spaces.Discrete(ChineseChessBoard.action_size)  # 608
+        self.env_player = ChineseChessBoard.RED
+        self.current_board = ChineseChessBoard().board
+
+    def get_action_mask(self):
+        """获取当前合法动作掩码"""
+        board = ChineseChessBoard(self.current_board)
+        legal_actions = board.get_legal_actions(self.env_player)
+        mask = np.zeros(self.action_space.n, dtype=bool)
+        mask[list(legal_actions)] = True
+        return mask
+
+    def reset(self, seed=None, options=None):
+        self.current_board = ChineseChessBoard().board
+        return self._get_obs(), {}
+
+    def step(self, action):
+        if self.env_player == ChineseChessBoard.RED:
+            board = ChineseChessBoard(self.current_board)
+            s1 = board.takeAction(action, ChineseChessBoard.RED)
+            self.current_board = board.board
+            done = ChineseChessBoard(self.current_board).get_winner() is not None
+            reward = s1
+            if not done:
+                model_action = self._predict_opponent_action(self.current_board)
+                board = ChineseChessBoard(self.current_board)
+                s2 = board.takeAction(model_action, ChineseChessBoard.BLACK)
+                self.current_board = board.board
+                reward -= s2
+                done = ChineseChessBoard(self.current_board).get_winner() is not None
+            return self._get_obs(), reward, done, False, {}
+        else:
+            board = ChineseChessBoard(self.current_board)
+            s2 = board.takeAction(action, ChineseChessBoard.BLACK)
+            self.current_board = board.board
+            done = ChineseChessBoard(self.current_board).get_winner() is not None
+            reward = s2
+            if not done:
+                model_action = self._predict_opponent_action(self.current_board)
+                board = ChineseChessBoard(self.current_board)
+                s1 = board.takeAction(model_action, ChineseChessBoard.RED)
+                self.current_board = board.board
+                reward = -s1
+                done = ChineseChessBoard(self.current_board).get_winner() is not None
+            return self._get_obs(), reward, done, False, {}
+
+    def _get_obs(self):
+        board = ChineseChessBoard(self.current_board)
+        return board.fen_to_planes()
+
+    def _predict_opponent_action(self, board):
+        board = ChineseChessBoard(board)
+        for i in range(ChineseChessBoard.BOARD_HEIGHT):
+            for j in range(ChineseChessBoard.BOARD_WIDTH):
+                piece = board[i, j]
+                if piece != '.':
+                    board[i, j] = piece.swapcase()
+        def rotate_180(board):
+            height = board.BOARD_HEIGHT
+            width = board.BOARD_WIDTH
+            board_rotate180 = ChineseChessBoard()
+            for i in range(height):
+                for j in range(width):
+                    board_rotate180[height - 1 - i, width - 1 - j] = board[i, j]
+            return ChineseChessBoard(board_rotate180.board)
+        board_rotate180 = rotate_180(board)
+        model = self.get_model_func()
+        if model:
+            legal_actions = board_rotate180.get_legal_actions(self.env_player)
+            mask = np.zeros(self.action_space.n, dtype=np.int8)
+            mask[list(legal_actions)] = 1
+            action, _ = model.predict(board_rotate180.fen_to_planes(), 
+                action_masks=mask, deterministic=True)
+            action = int(action)
+        else:
+            legal_actions = board_rotate180.get_legal_actions(self.env_player)
+            action = np.random.choice(list(legal_actions))
+        m180 = board_rotate180.action_to_move(action)
+        height = board.BOARD_HEIGHT
+        width = board.BOARD_WIDTH
+        d = (-1*(m180[2] - m180[0]), -1*(m180[3] - m180[1]))
+        m = (width - 1 - m180[0], height - 1 - m180[1])
+        m = (m[0], m[1], m[0]+d[0], m[1]+d[1])
+        action = board.move_to_action(*m)
+        return action
+
+    def render(self, mode='human'):
+        board = ChineseChessBoard(self.current_board)
+        board.print_board()
+
+    def close(self):
+        pass
 
 Winner = Enum("Winner", "red black draw")
 
@@ -67,10 +178,26 @@ class ChineseChessBoard():
     Idx_2_Fen = {
         v: k for k, v in Fen_2_Idx.items()
     }
+    pieceScore = {
+        'p': 10,
+        'c': 20,
+        'r': 40,
+        'k': 1000,
+        'b': 15,
+        'a': 15,
+        'n': 40,
+        'P': 10,
+        'C': 20,
+        'R': 40,
+        'K': 1000,
+        'B': 15,
+        'A': 15,
+        'N': 40,
+    }
     PIECE_NUM = len(Fen_2_Idx.keys())
     BOARD_HEIGHT = len(INIT_BOARD)
     BOARD_WIDTH = len(INIT_BOARD[0])
-    def __init__(self, board=None):
+    def __init__(self, board=None, model=None):
         if board is not None:
             self.board = np.copy(board)
         else:
@@ -164,7 +291,7 @@ class ChineseChessBoard():
     def set_last_piece_capture_turn_num(self, value):
         self.board[self.height*self.width+1] = value
 
-    def get_winner(self, color):
+    def get_winner(self):
         if self.K_point is None:
             # print(f"no black king red win")
             return Winner.red
@@ -526,9 +653,12 @@ class ChineseChessBoard():
         old_piece = self[y2, x2]
         self[y1, x1] = '.'
         self[y2, x2] = ch
+        score = 0.1
         if old_piece != '.':
+            score = self.pieceScore[old_piece]
             self.set_last_piece_capture_turn_num(self.get_turn_num())
         self.inc_turn_num()
+        return score
 
 class ChineseChessGame():
     """
@@ -621,7 +751,7 @@ class ChineseChessGame():
 
     def getGameEnded(self, board, player):
         board = ChineseChessBoard(board)
-        winner = board.get_winner(player)
+        winner = board.get_winner()
         if winner is None:
             return 0
         if winner == Winner.draw:
@@ -691,13 +821,13 @@ class ChineseChessGame():
         board_rotate180 = rotate_180(board)
         board_rotate180_np = board_rotate180.fen_to_planes()
         # board 镜像 move 的 delta[0] * -1 进行转换
-        def mirror(matrix):
+        def mirror(board):
             height = board.BOARD_HEIGHT
             width = board.BOARD_WIDTH
             mirrored = ChineseChessBoard()
             for i in range(height):
                 for j in range(width):
-                    mirrored[height - 1 - i, j] = matrix[i, j]
+                    mirrored[height - 1 - i, j] = board[i, j]
             return ChineseChessBoard(mirrored.board)
         board_mirror = mirror(board)
         board_mirror_np = board_mirror.fen_to_planes()
@@ -709,7 +839,7 @@ class ChineseChessGame():
         # board_rotate180.print_board()
         # board_mirror.print_board()
         for a, p in enumerate(pi):
-            if p == 0:
+            if abs(p) < sys.float_info.epsilon:
                 continue
             m = board.action_to_move(a)
             d1 = (-1*(m[2] - m[0]), -1*(m[3] - m[1]))
@@ -761,20 +891,31 @@ class ChineseChessGame():
         return board.action_to_move(action)
     
 if __name__ == "__main__":
-    board = [
-        ['R', 'N', 'B', 'A', 'K', 'A', 'B', 'N', 'R'],
-        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        ['.', 'C', '.', '.', '.', '.', '.', 'C', '.'],
-        ['P', '.', 'P', '.', 'P', '.', 'P', '.', 'P'],
-        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        ['p', '.', 'p', '.', 'p', '.', 'p', '.', 'p'],
-        ['.', 'c', '.', '.', '.', '.', '.', 'c', '.'],
-        ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
-        ['r', 'n', 'b', 'a', 'k', 'a', 'b', 'n', 'r']
-    ]
-    board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
-    board.print_board()
-    print(board.to_fen())
-    print(sorted(list(board.action_to_move(a) for a in board.get_legal_actions(ChineseChessBoard.RED))))
-    print(sorted(list(board.action_to_move(a) for a in board.get_legal_actions(ChineseChessBoard.BLACK))))
+    env = ChineseChessEnv()
+    obs, _ = env.reset()
+    done = False
+    game = ChineseChessGame()
+    env.render()
+    # 随机对战测试循环
+    while not done:  # 最多运行100步防止无限循环
+        # 获取合法动作
+        valid_moves = game.getValidMoves(obs, 1)
+        legal_actions = []
+        for i, v in enumerate(valid_moves):
+            if v == 1:
+                legal_actions.append(i)
+        # 随机选择动作
+        action = np.random.choice(legal_actions)
+        print(f"action={action}")
+        # 执行动作
+        next_obs, reward, done, _, _ = env.step(action)
+        
+        # 打印信息
+        print(f"Action taken: {action}")
+        print(f"Reward: {reward:.1f} {done}")
+        
+        # 渲染棋盘（可选）
+        env.render()  
+        
+        # 更新状态
+        obs = next_obs

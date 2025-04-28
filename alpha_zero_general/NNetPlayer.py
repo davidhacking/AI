@@ -2,7 +2,7 @@ from chinese_chess.ChineseChessGame import ChineseChessGame
 from chinese_chess.ChineseChessPlayers import *
 from utils import *
 from chinese_chess.pytorch.NNet import NNetWrapper as nn
-from MCTS import MCTS
+from MCTS2 import MCTS
 import multiprocessing
 from tqdm import tqdm
 
@@ -12,7 +12,7 @@ class NNetPlayer():
         n1 = nn(game)
         if model_file:
             n1.load_checkpoint(model_path, model_file)
-        args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0, 'max_mcts_depth': 500})
+        args1 = dotdict({'numMCTSSims': 1000, 'cpuct':1.5, 'max_mcts_depth': 500})
         self.mcts = MCTS(game, n1, args1)
 
     def play(self, board):

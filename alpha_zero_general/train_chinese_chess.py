@@ -7,31 +7,37 @@ from Coach import Coach
 from chinese_chess.ChineseChessGame import ChineseChessGame as Game
 from chinese_chess.pytorch.NNet import NNetWrapper as nn
 from utils import *
-
+logging.basicConfig(
+    filename='train_chinese_chess_model.log',  # 日志文件名
+    filemode='a',        # 追加模式（'w' 为覆盖模式）
+    format='%(asctime)s - %(levelname)s - %(message)s',  # 日志格式
+    level=logging.DEBUG    # 日志级别
+)
 log = logging.getLogger(__name__)
 
 coloredlogs.install(level='DEBUG')  # Change this to DEBUG to see more info.
 
 args = dotdict({
     'numIters': 1000,
-    'numEps': 200,              # Number of complete self-play games to simulate during a new iteration.
+    'numEps': 100,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 120,
-    'numProcesses': 16,
+    'numProcesses': 10,
     'minmaxIterations': 150,        #
     'ebsGreedyRate': 0.0,
     'updateThreshold': 0.55,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
     'maxlenOfQueue': 200000,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 120,          # Number of games moves for MCTS to simulate.
-    'arenaCompare': 40,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1.0,
+    'numMCTSSims': 500,          # Number of games moves for MCTS to simulate.
+    'arenaCompare': 20,         # Number of games to play during arena play to determine if new net will be accepted.
+    'cpuct': 1.2,
     'checkpoint': './chinese_chess_models/',
     'load_model': True,
     'load_train_examples': True,
-    'load_folder_file': ('./chinese_chess_models','checkpoint_1.pth.tar'),
-    'load_examples_folder_file': ('./chinese_chess_models','checkpoint_1.pth.tar'),
-    'numItersForTrainExamplesHistory': 20,
+    'load_folder_file': ('./chinese_chess_models','best.pth.tar'),
+    'load_examples_folder_file': ('./chinese_chess_models','checkpoint_6.pth.tar'),
+    'numItersForTrainExamplesHistory': 5, # 内存不够
     'max_mcts_depth': 500,
     'pretrainIters': 0,
+    'use_gamma': 1,
 })
 
 

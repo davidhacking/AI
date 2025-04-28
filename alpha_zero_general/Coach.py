@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 from Arena import Arena
-from MCTS import MCTS
+from MCTS2 import MCTS
 import multiprocessing
 from functools import partial
 import time
@@ -82,8 +82,20 @@ class Coach():
             r = self.game.getGameEnded(board, self.curPlayer)
             example_size = len(trainExamples)
             if r != 0:
+                if self.args.use_gamma:
+                    return self.generate_train_examples(trainExamples, r)
                 return [(x[0], x[2], r if x[1] == self.curPlayer else -r)
                         for i, x in enumerate(trainExamples)]
+    def generate_train_examples(self, trainExamples, r, gamma=0.99):
+        examples = []
+        for t, x in enumerate(trainExamples):
+            player = x[1]
+            state = x[0]
+            pi = x[2]
+            discounted_r = r * (gamma ** (len(trainExamples) - t))
+            final_r = discounted_r if player == self.curPlayer else -discounted_r
+            examples.append((state, pi, final_r))
+        return examples
 
     def execute_episode_wrapper(self, _):
         return self.executeEpisode()
@@ -158,7 +170,7 @@ class Coach():
             self.nnet.train(trainExamples)
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='new.pth.tar')
             
-            pwins, nwins, draws = parallelPlayGames(40, self.args.checkpoint, 'temp.pth.tar', 
+            pwins, nwins, draws = parallelPlayGames(self.args.arenaCompare, self.args.checkpoint, 'temp.pth.tar', 
                                                     self.args.checkpoint, 'new.pth.tar', 10)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))

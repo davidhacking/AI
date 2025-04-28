@@ -21,7 +21,7 @@
 import unittest
 
 import Arena
-from MCTS import MCTS
+from MCTS2 import MCTS
 
 from othello.OthelloGame import OthelloGame
 from othello.OthelloPlayers import RandomPlayer

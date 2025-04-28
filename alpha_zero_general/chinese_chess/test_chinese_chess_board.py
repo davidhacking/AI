@@ -153,9 +153,36 @@ class TestChineseChessBoard(unittest.TestCase):
     def test_symmetris(self):
         board = ChineseChessBoard()
         g = ChineseChessGame()
-        pi = g.getValidMoves(board, 1)
-        bs = g.getSymmetries(board, pi)
+        pi = g.getValidMoves(board.board, 1)
+        bs = g.getSymmetries(board.board, pi)
         self.assertEqual(3, len(bs))
+    
+    def test_r_kill_king(self):
+        board = [
+            ['.', '.', '.', '.', 'K', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', 'A', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', '.', '.', '.', '.', '.'],
+            ['.', '.', '.', '.', 'k', '.', '.', '.', 'r']
+        ]
+        board = ChineseChessBoard(ChineseChessBoard.get_board_array(board))
+        legal_moves = board.get_legal_actions(ChineseChessBoard.RED)
+        a1 = board.move_to_action(8, 9, 8, 0)
+        self.assertIn(a1, legal_moves)
+        board.takeAction(a1, ChineseChessBoard.RED)
+        board = ChineseChessBoard(board.board)
+        legal_moves = board.get_legal_actions(ChineseChessBoard.RED)
+        a2 = board.move_to_action(8, 0, 4, 0)
+        self.assertIn(a2, legal_moves)
+        board.takeAction(a2, ChineseChessBoard.RED)
+        g = ChineseChessGame()
+        self.assertEqual(1, g.getGameEnded(board.board, ChineseChessBoard.RED))
+        self.assertEqual(-1, g.getGameEnded(board.board, ChineseChessBoard.BLACK))
         
 
 

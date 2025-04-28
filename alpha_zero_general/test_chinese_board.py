@@ -3,7 +3,7 @@ from chinese_chess.ChineseChessGame import ChineseChessGame
 from chinese_chess.ChineseChessPlayers import *
 from utils import *
 from chinese_chess.pytorch.NNet import NNetWrapper as nn
-from MCTS import MCTS
+from MCTS2 import MCTS
 
 g = ChineseChessGame()
 
